@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
+        has: [{ type: "host", value: "www.byungskerlog.com" }],
+        destination: "https://byungskerlog.com/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
         has: [{ type: "host", value: "byungskerlog.vercel.app" }],
         destination: "https://byungskerlog.com/:path*",
         permanent: true,

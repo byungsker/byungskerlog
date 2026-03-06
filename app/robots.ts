@@ -8,17 +8,17 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/handler/"],
+        disallow: ["/admin/", "/api/", "/handler/", "/posts/*/opengraph-image", "/short/*/opengraph-image", "/_next/static/media/"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/handler/"],
+        disallow: ["/admin/", "/api/", "/handler/", "/posts/*/opengraph-image", "/short/*/opengraph-image", "/_next/static/media/"],
       },
       {
         userAgent: "Yeti",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/handler/"],
+        disallow: ["/admin/", "/api/", "/handler/", "/posts/*/opengraph-image", "/short/*/opengraph-image", "/_next/static/media/"],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
