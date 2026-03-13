@@ -55,6 +55,8 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   const title = `${decodedTag} | Tags | Byungsker Log`;
   const description = `"${decodedTag}" 태그가 붙은 ${tagData._count.posts}개의 포스트를 확인하세요. 병스커의 기술 블로그에서 관련 글을 탐색해보세요.`;
 
+  const shouldIndex = tagData._count.posts >= 3;
+
   return {
     title,
     description,
@@ -62,6 +64,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
     alternates: {
       canonical: `${siteUrl}/tags/${encodeURIComponent(decodedTag)}`,
     },
+    robots: shouldIndex ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -74,7 +77,6 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
       description,
     },
   };
-}
 
 async function getPostsByTag(tagName: string) {
   try {
