@@ -48,6 +48,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.5,
     },
+    {
+      url: `${siteUrl}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${siteUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${siteUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
   ];
 
   try {
@@ -104,7 +122,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    // 태그 가져오기 (게시된 포스트가 있는 태그만)
+    // 태그 가져오기 (게시된 포스트가 3개 이상인 태그만 — thin content 방지)
     const tags = await prisma.tag.findMany({
       where: {
         posts: {
@@ -114,17 +132,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: {
         name: true,
         updatedAt: true,
+        _count: {
+          select: {
+            posts: { where: { published: true } },
+          },
+        },
       },
       orderBy: { updatedAt: "desc" },
     });
 
-    // 태그 URL 생성
-    const tagUrls = tags.map((tag) => ({
-      url: `${siteUrl}/tags/${encodeURIComponent(tag.name)}`,
-      lastModified: tag.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.5,
-    }));
+    // 포스트 3개 이상인 태그만 사이트맵에 포함 (thin content 페이지 제외)
+    const tagUrls = tags
+      .filter((tag) => tag._count.posts >= 3)
+      .map((tag) => ({
+        url: `${siteUrl}/tags/${encodeURIComponent(tag.name)}`,
+        lastModified: tag.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.5,
+      }));
 
     return [...staticPages, ...longPostUrls, ...shortPostUrls, ...seriesUrls, ...tagUrls];
   } catch {
