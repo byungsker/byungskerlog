@@ -77,6 +77,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
       description,
     },
   };
+}
 
 async function getPostsByTag(tagName: string) {
   try {
