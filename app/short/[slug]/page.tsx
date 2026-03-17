@@ -45,9 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   });
 
   if (!postData) {
-    return {
-      title: "포스트를 찾을 수 없습니다",
-    };
+    notFound();
   }
 
   const post = { ...postData, tags: postData.tags.map((t) => t.name) };
