@@ -47,9 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   });
 
   if (!tagData) {
-    return {
-      title: "Tag not found",
-    };
+    notFound();
   }
 
   const title = `${decodedTag} | Tags | Byungsker Log`;

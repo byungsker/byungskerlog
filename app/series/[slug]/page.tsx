@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -51,9 +51,7 @@ export async function generateMetadata({ params }: SeriesDetailPageProps): Promi
   const series = await getSeriesBySlug(slug);
 
   if (!series) {
-    return {
-      title: "시리즈를 찾을 수 없습니다 | Byungsker Log",
-    };
+    notFound();
   }
 
   return {
