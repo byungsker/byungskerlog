@@ -13,7 +13,6 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel
 export async function generateStaticParams() {
   // 빌드 시 프리렌더링 스킵 → 첫 접속 시 ISR 생성 (Neon 무료 티어 OOM 방지)
   return [];
-  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
