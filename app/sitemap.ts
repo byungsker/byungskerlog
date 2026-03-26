@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
+export const revalidate = 86400; // 24시간마다 sitemap 재생성 (DB 업데이트 반영)
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
