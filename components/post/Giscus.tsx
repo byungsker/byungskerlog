@@ -10,9 +10,9 @@ export function Giscus({ slug }: GiscusProps) {
   return (
     <GiscusComponent
       repo="byungsker/byungskerlog-comments"
-      repoId="R_kgDOK..."
-      category="Comments"
-      categoryId="DIC_kwDOK..."
+      repoId="R_kgDORzRcSQ"
+      category="General"
+      categoryId="DIC_kwDORzRcSc4C5eyT"
       mapping="specific"
       term={slug}
       strict="0"
