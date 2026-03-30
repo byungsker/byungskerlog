@@ -1,8 +1,8 @@
 reviews:
-  review_status: true
-  base_branches:
-    - "main"
-    - "dev"
-    - "daily/.*"
-    - "feat/.*"
-    - "fix/.*"
+  auto_review:
+    base_branches:
+      - "main"
+      - "dev"
+      - "daily/.*"
+      - "feat/.*"
+      - "fix/.*"
