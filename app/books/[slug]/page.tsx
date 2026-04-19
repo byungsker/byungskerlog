@@ -35,12 +35,14 @@ export async function generateMetadata({ params }: BookDetailPageProps): Promise
   if (!book) {
     return {
       title: "책을 찾을 수 없습니다",
+      robots: { index: false, follow: true },
     };
   }
 
   return {
     title: `${book.title} | Byungskerlog`,
     description: book.summary || `${book.author}의 ${book.title}`,
+    robots: { index: false, follow: true },
   };
 }
 

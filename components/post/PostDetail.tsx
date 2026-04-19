@@ -25,6 +25,15 @@ import type { Post, SeriesPost, RelatedPost, PrevNextPost } from "@/lib/post-dat
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
+const SHORT_AD_CONTENT_THRESHOLD = 300;
+
+function getPlainTextLength(content: string): number {
+  return content
+    .replace(/[#*`~>\[\]()!\-_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim().length;
+}
+
 interface PostDetailProps {
   post: Post;
   slug: string;
@@ -52,6 +61,7 @@ export function PostDetail({
   const basePath = isFromShort ? "/short" : "/posts";
   const backLink = isFromShort ? "/short-posts" : "/posts";
   const backLabel = isFromShort ? "Short" : "Post";
+  const adsEnabled = post.type !== "SHORT" || getPlainTextLength(post.content) >= SHORT_AD_CONTENT_THRESHOLD;
 
   return (
     <div className="bg-background">
@@ -75,12 +85,14 @@ export function PostDetail({
       <div className="post-detail-layout relative py-12">
         <div className="post-content-center flex justify-center px-4 sm:px-6 lg:px-8">
           <div className={cn("post-main-content max-w-5xl w-full", post.type !== "SHORT" && "xl:pr-24")}>
-            <AdSense
-              adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP || ""}
-              adFormat="fluid"
-              adLayoutKey="-fb+5w+4e-db+86"
-              className="mb-8"
-            />
+            {adsEnabled && (
+              <AdSense
+                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP || ""}
+                adFormat="fluid"
+                adLayoutKey="-fb+5w+4e-db+86"
+                className="mb-8"
+              />
+            )}
 
             <Link
               href={backLink}
@@ -160,12 +172,14 @@ export function PostDetail({
               </PostImageGallery>
             </article>
 
-            <AdSense
-              adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE || ""}
-              adFormat="fluid"
-              adLayoutKey="-fb+5w+4e-db+86"
-              className="my-8"
-            />
+            {adsEnabled && (
+              <AdSense
+                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE || ""}
+                adFormat="fluid"
+                adLayoutKey="-fb+5w+4e-db+86"
+                className="my-8"
+              />
+            )}
 
             {post.series && seriesPosts.length > 0 && (
               <>
@@ -323,12 +337,14 @@ export function PostDetail({
 
             <Separator className="my-12" />
 
-            <AdSense
-              adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM || ""}
-              adFormat="fluid"
-              adLayoutKey="-fb+5w+4e-db+86"
-              className="mt-12"
-            />
+            {adsEnabled && (
+              <AdSense
+                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM || ""}
+                adFormat="fluid"
+                adLayoutKey="-fb+5w+4e-db+86"
+                className="mt-12"
+              />
+            )}
 
             <Separator className="my-12" />
 

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 
@@ -11,20 +12,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel
 export async function generateStaticParams() {
   try {
     const posts = await prisma.post.findMany({
-      where: { published: true },
-      select: { slug: true, subSlug: true },
+      where: { published: true, type: "LONG" },
+      select: { slug: true },
     });
 
-    const params: { slug: string }[] = [];
-
-    posts.forEach((post: { slug: string; subSlug: string | null }) => {
-      params.push({ slug: post.slug });
-      if (post.subSlug) {
-        params.push({ slug: post.subSlug });
-      }
-    });
-
-    return params;
+    return posts.map((post: { slug: string }) => ({ slug: post.slug }));
   } catch {
     return [];
   }
@@ -45,6 +37,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!postData) {
     return {
       title: "포스트를 찾을 수 없습니다",
+    };
+  }
+
+  if (postData.type === "SHORT") {
+    return {
+      robots: { index: false, follow: true },
+      alternates: { canonical: `${siteUrl}/short/${postData.slug}` },
+    };
+  }
+
+  if (postData.slug !== decodedSlug) {
+    return {
+      robots: { index: false, follow: true },
+      alternates: { canonical: `${siteUrl}/posts/${postData.slug}` },
     };
   }
 
@@ -94,6 +100,23 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+
+  const post = await prisma.post.findFirst({
+    where: {
+      OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
+    },
+    select: { slug: true, type: true },
+  });
+
+  if (post) {
+    if (post.type === "SHORT") {
+      permanentRedirect(`/short/${post.slug}`);
+    }
+    if (post.slug !== decodedSlug) {
+      permanentRedirect(`/posts/${post.slug}`);
+    }
+  }
 
   return (
     <Suspense fallback={<PostDetailSkeleton />}>

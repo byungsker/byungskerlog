@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
@@ -10,23 +10,20 @@ export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
+const SHORT_NOINDEX_THRESHOLD = 300;
+
+function stripMarkdown(content: string): string {
+  return content.replace(/[#*`~>\[\]()!\-_]/g, "").replace(/\s+/g, " ").trim();
+}
+
 export async function generateStaticParams() {
   try {
     const posts = await prisma.post.findMany({
       where: { published: true, type: "SHORT" },
-      select: { slug: true, subSlug: true },
+      select: { slug: true },
     });
 
-    const params: { slug: string }[] = [];
-
-    posts.forEach((post: { slug: string; subSlug: string | null }) => {
-      params.push({ slug: post.slug });
-      if (post.subSlug) {
-        params.push({ slug: post.subSlug });
-      }
-    });
-
-    return params;
+    return posts.map((post: { slug: string }) => ({ slug: post.slug }));
   } catch {
     return [];
   }
@@ -49,6 +46,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: "포스트를 찾을 수 없습니다",
     };
   }
+
+  if (postData.slug !== decodedSlug) {
+    return {
+      robots: { index: false, follow: true },
+      alternates: { canonical: `${siteUrl}/short/${postData.slug}` },
+    };
+  }
+
+  const plainTextLength = stripMarkdown(postData.content).length;
+  const isThin = plainTextLength < SHORT_NOINDEX_THRESHOLD;
 
   const post = { ...postData, tags: postData.tags.map((t) => t.name) };
   const canonicalUrl = `${siteUrl}/short/${post.slug}`;
@@ -91,11 +98,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     alternates: {
       canonical: canonicalUrl,
     },
+    ...(isThin && { robots: { index: false, follow: true } }),
   };
 }
 
 export default async function ShortPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+
+  const baseMatch = await prisma.post.findFirst({
+    where: {
+      OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
+    },
+    select: { slug: true, type: true },
+  });
+
+  if (baseMatch && baseMatch.slug !== decodedSlug) {
+    permanentRedirect(`/short/${baseMatch.slug}`);
+  }
+
   const post = await getPost(slug);
 
   if (!post) {
