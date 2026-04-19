@@ -58,6 +58,9 @@ function fixBoldItalicMarkdown(content: string): string {
       // *text * → *text* (이탤릭)
       .replace(/\*(\S[^*]*?)\s+\*/g, "*$1*")
       .replace(/\*\s+([^*]*?\S)\*/g, "*$1*")
+      // CommonMark 엣지케이스: **"text"** 처럼 따옴표로 감싸진 볼드 파싱 실패 보완
+      // remark가 구두점 boundary에서 right-flanking 조건을 만족하지 못하는 케이스를 HTML로 우회
+      .replace(/\*\*([""'][^*\n]+[""'])\*\*/g, (_, inner) => `<strong>${inner}</strong>`)
   );
 }
 
@@ -77,9 +80,10 @@ function extractText(children: ReactNode): string {
 function preprocessHeadings(content: string): string {
   // DB에 저장된 HTML heading 태그를 markdown ATX heading으로 변환
   // 예: <h2 id="..." class="...">텍스트</h2> → ## 텍스트
+  // 앞뒤에 \n\n 보장 → 헤딩과 인접 텍스트가 붙어서 렌더링되는 버그 방지
   return content.replace(/<h([1-3])[^>]*>(.*?)<\/h\1>/gi, (_, level, innerText) => {
     const text = innerText.replace(/<[^>]*>/g, "").trim();
-    return "#".repeat(parseInt(level)) + " " + text;
+    return "\n\n" + "#".repeat(parseInt(level)) + " " + text + "\n\n";
   });
 }
 
@@ -294,6 +298,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     const lines = processedContent.split("\n");
     const result: { type: "markdown" | "url"; content: string }[] = [];
     let markdownBuffer: string[] = [];
+    let inCodeBlock = false;
+    let codeBlockFence = "";
 
     const flushMarkdown = () => {
       if (markdownBuffer.length > 0) {
@@ -303,8 +309,21 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     };
 
     for (const line of lines) {
+      // 코드블록 상태 추적 (``` 또는 ~~~)
+      const fenceMatch = line.trim().match(/^(`{3,}|~{3,})/);
+      if (fenceMatch) {
+        if (!inCodeBlock) {
+          inCodeBlock = true;
+          codeBlockFence = fenceMatch[1];
+        } else if (line.trim().startsWith(codeBlockFence)) {
+          inCodeBlock = false;
+          codeBlockFence = "";
+        }
+      }
+
       const trimmed = line.trim();
-      if (URL_LINE_REGEX.test(trimmed)) {
+      // 코드블록 안에 있는 URL은 LinkCard로 분리하지 않음
+      if (!inCodeBlock && URL_LINE_REGEX.test(trimmed)) {
         flushMarkdown();
         result.push({ type: "url", content: trimmed });
       } else {

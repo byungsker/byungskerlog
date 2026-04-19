@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { permanentRedirect } from "next/navigation";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 
@@ -35,9 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   });
 
   if (!postData) {
-    return {
-      title: "포스트를 찾을 수 없습니다",
-    };
+    notFound();
   }
 
   if (postData.type === "SHORT") {
