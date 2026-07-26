@@ -6,6 +6,26 @@ Instructions for AI coding agents working in this repository.
 
 Next.js 16 personal blog with Neon PostgreSQL (Prisma), Stack Auth, TipTap editor, deployed on Vercel.
 
+## Delivery and Release Policy (MANDATORY)
+
+- Primary delivery unit: `web`
+- Primary delivery profile: `web-continuous`
+- Protected production and PR base branch: `main`
+- Active target versions and promotion sources:
+  `.byungskerlab/release-lines.json`
+- Branch and pull-request validation policy:
+  `.byungskerlab/branch-policy.json`
+- Work branches use
+  `[codex/]<type>/web/<exact-semver>/<issue-or-scope>` and target `main`.
+- The legacy `dev` branch may remain temporarily for historical staging
+  compatibility, but new product work and pull requests must not target it.
+- Production promotion is reviewed PR/preview → `main` → the same verified
+  commit deployed by Vercel. Preserve the previous verified deployment as the
+  rollback target.
+- Before any branch, commit, push, PR, review, merge, tag, or deployment,
+  independently verify the complete Target Delivery Contract and the
+  fail-closed `Target Version Contract` check.
+
 ## Database Environment (CRITICAL)
 
 This project uses **Neon PostgreSQL** with branch-based development workflow.
@@ -349,8 +369,8 @@ export function usePost(id: string, options: UsePostOptions = {}) {
 
 ## Git Conventions
 
-- Commit as **byungsker**, English conventional commits with Korean bullets
-- Create feature branches, PR to main/dev (see CLAUDE.md template)
+- Use English conventional commits with Korean bullets
+- Create target-versioned work branches and open PRs to `main`
 - Push only when work chunk is complete, use "Merge Pull Request" (not squash)
 
 ## Key Paths
