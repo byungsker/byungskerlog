@@ -25,29 +25,30 @@ This is a Next.js 16-based personal blog application with admin capabilities. Th
 
 ## Git Rules
 
-- 반드시 **byungsker** 계정으로 커밋, 푸시, PR을 진행해야해.
 - 커밋 메세지는 영문 컨벤셔널 커밋으로 해야해.(단, description은 한글 불릿 포인트로 작성해.)
 
 ### Branch Strategy
 
 ```
-main (정식 릴리즈만)
-  ↑ 특별 요청 시에만 PR
-dev (기본 base branch - GitHub default)
-  ↑ 일반 개발 PR
-feature/* / fix/* 등 서브 브랜치
+main (보호된 운영·PR base)
+  ↑ 검증된 PR
+[codex/]<type>/web/<exact-semver>/<issue-or-scope>
 ```
 
-- **main**: 정식 릴리즈 전용. dev로부터 머지만 허용.
-- **dev**: 기본 개발 브랜치. 모든 feature/fix 브랜치의 base.
-- **feature/\***: 기능 개발 브랜치. 반드시 dev를 향해 PR 생성.
-- main으로 PR 생성은 **사용자가 명시적으로 요청할 때만** 수행.
+- **main**: `web-continuous` 프로파일의 보호된 운영·PR base.
+- **dev**: 과거 staging 호환을 위해 일시적으로 남아 있을 수 있으나,
+  신규 작업의 base 또는 PR target으로 사용하지 않는다.
+- 작업 브랜치: `.byungskerlab/release-lines.json`의 활성 버전과
+  `.byungskerlab/branch-policy.json`의 delivery unit을 정확히 따른다.
+- 모든 PR은 `Target-Delivery-Unit`, `Target-Version`,
+  `Delivery-Profile` 메타데이터와 fail-closed 검사를 충족해야 한다.
 
 ### PR Rules
 
 - 요청한 작업이 '덩어리' 단위라면 맥락에 맞추어 브랜치를 생성해서 작업해야해.
   - 맥락 별로 커밋을 만들며 진행해야해.
-  - 작업 덩어리가 완료된다면 **dev** 브랜치를 향하는 PR을 생성해서 코멘트를 작성해야해.(하단 템플릿에서 인용문을 지우고 해당 내용을 작성하면돼. PR 이름은 브랜치 이름)
+  - 작업 덩어리가 완료되면 활성 타깃 버전을 포함한 작업 브랜치에서
+    **main**을 향하는 PR을 생성한다.
   ```
   > 이번 PR의 목적을 한 문장으로 요약해주세요.
   >
@@ -99,7 +100,8 @@ feature/* / fix/* 등 서브 브랜치
 ````
 - git push는 요청한 **작업 덩어리**가 전부 완료된 경우에만 수행해야한다. (한 커밋이 완료되었다고 바로 푸시하지 말 것)
 - git push 후 CI 확인 워크플로우는 `~/.claude/skills/git-ci-workflow/SKILL.md` 참조
-- main 브랜치에서의 푸시는 반드시, dev나 feature 등 서브 브랜치를 병합하는 푸시만 있어야해. 어떤 작업을 요청하면 반드시 브랜치를 생성해서 작업하고 승인되어야만 main 브랜치에서 푸시된다는 의미지.
+- main 브랜치에 직접 커밋하거나 푸시하지 않는다. 활성 타깃 버전의
+  작업 브랜치를 만들고 검증된 PR을 통해서만 병합한다.
   - 그리고 내가 Merge(머지, 병합)하라고 명령하는건 전부 PR에서 'Merge Pull Request' 하는 것을 의미하는거야. squash 같은 명령어로 머지하지마.
 
 ## Code Rules
