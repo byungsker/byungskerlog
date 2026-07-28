@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
 import { revalidatePath } from "next/cache";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
 
 type BulkAction = "delete" | "publish" | "unpublish";
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const body = (await request.json()) as BulkActionRequest;
@@ -61,6 +65,7 @@ export async function POST(request: NextRequest) {
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath("/admin/posts");
+    revalidatePostListCaches();
 
     const actionMessages: Record<BulkAction, string> = {
       delete: "deleted",

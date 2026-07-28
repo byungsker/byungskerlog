@@ -1,8 +1,8 @@
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { Separator } from "@/components/ui/Separator";
-import { cn } from "@/lib/utils";
 import { TableOfContents } from "./Toc";
 import { MobileToc } from "./MobileToc";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -22,8 +22,10 @@ import { calculateReadingTime } from "@/lib/reading-time";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PostCacheHydrator } from "./PostCacheHydrator";
 import type { Post, SeriesPost, RelatedPost, PrevNextPost } from "@/lib/post-data";
+import { extractMarkdownHeadings } from "@/lib/markdown-content";
+import { siteConfig } from "@/lib/site-config";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 const SHORT_AD_CONTENT_THRESHOLD = 300;
 
@@ -62,12 +64,13 @@ export function PostDetail({
   const backLink = isFromShort ? "/short-posts" : "/posts";
   const backLabel = isFromShort ? "Short" : "Post";
   const adsEnabled = post.type !== "SHORT" || getPlainTextLength(post.content) >= SHORT_AD_CONTENT_THRESHOLD;
+  const hasMobileToc = post.type !== "SHORT" && extractMarkdownHeadings(post.content).length > 0;
 
   return (
     <div className="bg-background">
       <PostCacheHydrator post={post} />
       <ReadingProgress />
-      {post.type !== "SHORT" && <MobileToc content={post.content} />}
+      {hasMobileToc && <MobileToc content={post.content} />}
       <StructuredData
         type="article"
         data={{
@@ -84,7 +87,7 @@ export function PostDetail({
       <ReadingTracker slug={slug} postType={post.type} />
       <div className="post-detail-layout relative py-12">
         <div className="post-content-center flex justify-center px-4 sm:px-6 lg:px-8">
-          <div className={cn("post-main-content max-w-5xl w-full", post.type !== "SHORT" && "xl:pr-24")}>
+          <div className="post-main-content max-w-3xl w-full">
             {adsEnabled && (
               <AdSense
                 adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP || ""}
@@ -102,7 +105,7 @@ export function PostDetail({
               {backLabel}
             </Link>
 
-            <article>
+            <article tabIndex={-1}>
               <header className="mb-8">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-tight">
                   {post.title}
@@ -112,7 +115,7 @@ export function PostDetail({
                     <div className="post-created flex items-center gap-2 flex-wrap">
                       <span>작성:</span>
                       <time dateTime={post.createdAt.toISOString()}>
-                        {format(new Date(post.createdAt), "MMMM d, yyyy 'at' HH:mm")}
+                        {format(new Date(post.createdAt), "yyyy년 M월 d일 HH:mm", { locale: ko })}
                       </time>
                       <span className="hidden sm:inline">·</span>
                       <span>{calculateReadingTime(post.content)}</span>
@@ -120,7 +123,7 @@ export function PostDetail({
                     <div className="post-updated flex items-center gap-2">
                       <span>최종 수정:</span>
                       <time dateTime={post.updatedAt.toISOString()}>
-                        {format(new Date(post.updatedAt), "MMMM d, yyyy 'at' HH:mm")}
+                        {format(new Date(post.updatedAt), "yyyy년 M월 d일 HH:mm", { locale: ko })}
                       </time>
                     </div>
                   </div>
@@ -168,7 +171,7 @@ export function PostDetail({
                   <ThumbnailImage src={post.thumbnail} alt={post.title} />
                 )}
 
-                <MarkdownRenderer content={post.content} />
+                <MarkdownRenderer content={post.content} reserveMobileTocSpace={hasMobileToc} />
               </PostImageGallery>
             </article>
 

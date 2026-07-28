@@ -9,7 +9,6 @@ export const siteConfig = {
   social: {
     github: "https://github.com/byungsker",
     linkedin: "https://linkedin.com/in/byungsker",
-    twitter: "https://x.com/byungskers",
   },
 };
 
@@ -24,10 +23,5 @@ export const socialLinks = [
     icon: "/logo-linkedin.svg",
     href: siteConfig.social.linkedin,
     label: "LinkedIn",
-  },
-  {
-    icon: "/logo-x.svg",
-    href: siteConfig.social.twitter,
-    label: "X (Twitter)",
   },
 ];

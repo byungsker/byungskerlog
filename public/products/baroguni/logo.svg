@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5">
+  <title id="title">바로구니</title>
+  <g transform="translate(0 -232.884928)">
+    <g transform="matrix(.67932 0 0 .67932 434.585063 -192.575676)">
+      <rect x="-639.736" y="626.304" width="294.412" height="294.412" fill="none"/>
+      <clipPath id="clip">
+        <rect x="-639.736" y="626.304" width="294.412" height="294.412"/>
+      </clipPath>
+      <g clip-path="url(#clip)">
+        <g transform="matrix(5.130913 0 0 5.130913 -990.337526 -2964.631955)">
+          <rect x="68.331" y="699.863" width="57.38" height="57.38" fill="url(#background)"/>
+        </g>
+        <g transform="matrix(1.839948 0 0 1.839948 -680.394883 -996.114974)">
+          <path d="m150.107 942.387-17.893 68.893h-60l-19-68.893h96.893Z" fill="url(#basket)"/>
+        </g>
+        <g transform="matrix(1.839948 0 0 1.839948 -676.32083 -985.482203)">
+          <path d="m71.087 936 17.616-22.115M110.593 913.885l17.298 22.724" fill="none" stroke="#fff" stroke-width="6.67"/>
+        </g>
+        <g transform="matrix(1.472061 0 0 1.472061 -643.495008 -638.027162)">
+          <path d="M64 968.885h76" fill="none" stroke="#fff" stroke-width="8.33"/>
+        </g>
+        <g transform="matrix(1.183602 0 0 1.472061 -614.07218 -609.09663)">
+          <path d="M64 968.885h76" fill="none" stroke="#fff" stroke-width="9.18"/>
+        </g>
+        <g transform="matrix(1.472061 0 0 1.34937 -639.735841 -517.926866)">
+          <path d="M80 948.885v60" fill="none" stroke="#fff" stroke-width="8.69"/>
+        </g>
+        <g transform="matrix(1.472061 0 0 1.34937 -580.85339 -517.926866)">
+          <path d="M80 948.885v60" fill="none" stroke="#fff" stroke-width="8.69"/>
+        </g>
+      </g>
+    </g>
+  </g>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0 48.925113 -48.925113 0 97.021295 699.862992)">
+      <stop stop-color="#353534"/>
+      <stop offset=".55" stop-color="#0f0f0f"/>
+      <stop offset="1"/>
+    </linearGradient>
+    <linearGradient id="basket" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(96.006706 97.665426 -97.665426 96.006706 54.100165 919.663772)">
+      <stop stop-color="#fff" stop-opacity=".8"/>
+      <stop offset="1"/>
+    </linearGradient>
+  </defs>
+</svg>

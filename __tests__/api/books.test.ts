@@ -77,7 +77,7 @@ describe("GET /api/books", () => {
           select: { posts: true },
         },
       },
-      orderBy: { readAt: "desc" },
+      orderBy: { finishedAt: "desc" },
     });
   });
 

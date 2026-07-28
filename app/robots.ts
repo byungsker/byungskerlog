@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
+import { siteConfig } from "@/lib/site-config";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export default function robots(): MetadataRoute.Robots {
   return {

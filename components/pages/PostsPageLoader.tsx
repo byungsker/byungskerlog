@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getPostListCacheKey } from "@/lib/post-cache";
 import { unstable_cache } from "next/cache";
 import { PostsPageClient } from "./PostsPageClient";
 
@@ -55,19 +56,12 @@ const getPosts = (page: number) =>
             totalPages: Math.ceil(total / limit),
           },
         };
-      } catch {
-        return {
-          posts: [],
-          pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 0,
-          },
-        };
+      } catch (error) {
+        console.error("[PostsPageLoader] Failed to load posts", error);
+        throw error;
       }
     },
-    [`posts-page-${page}`],
+    [getPostListCacheKey("long", page)],
     { revalidate: 3600, tags: ["posts"] }
   )();
 
@@ -75,7 +69,11 @@ export async function PostsPageLoader({ page, countOnly }: PostsPageLoaderProps)
   const data = await getPosts(page);
 
   if (countOnly) {
-    return <span className="text-xl text-muted-foreground">{data.pagination.total}</span>;
+    return (
+      <span aria-label={`총 포스트 ${data.pagination.total}개`} className="text-xl text-muted-foreground">
+        {data.pagination.total}
+      </span>
+    );
   }
 
   return <PostsPageClient initialData={data} currentPage={page} />;

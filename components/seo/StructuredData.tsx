@@ -1,4 +1,6 @@
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteConfig } from "@/lib/site-config";
+
+const siteUrl = siteConfig.url;
 
 interface FAQItem {
   question: string;
@@ -161,6 +163,12 @@ export function StructuredData({ type, data }: StructuredDataProps) {
   };
 
   const structuredData = getStructuredData();
+  const serializedStructuredData = JSON.stringify(structuredData).replace(/</g, "\\u003c");
 
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializedStructuredData }}
+    />
+  );
 }

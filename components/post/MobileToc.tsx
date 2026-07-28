@@ -3,12 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { List } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
+import { extractMarkdownHeadings } from "@/lib/markdown-content";
 
 interface MobileTocProps {
   content: string;
@@ -17,38 +12,32 @@ interface MobileTocProps {
 export function MobileToc({ content }: MobileTocProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
+  const [isWithinContent, setIsWithinContent] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const tocPanelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
 
-  const toc = useMemo(() => {
-    const headingRegex = /^(#{1,3})\s+(.+)$/gm;
-    const headings: TocItem[] = [];
-    const idCounts: Record<string, number> = {};
-    let match;
-
-    while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length;
-      const text = match[2].trim();
-      const baseId = text
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w가-힣-]/g, "");
-
-      // 중복 ID 처리: 첫 번째는 그대로, 이후에는 -1, -2 등 suffix 추가
-      const count = idCounts[baseId] || 0;
-      const id = count === 0 ? baseId : `${baseId}-${count}`;
-      idCounts[baseId] = count + 1;
-
-      headings.push({ id, text, level });
-    }
-
-    return headings;
-  }, [content]);
+  const toc = useMemo(() => extractMarkdownHeadings(content), [content]);
 
   useEffect(() => {
     const handleScroll = () => {
       let currentActiveId = "";
+      const prose = document.querySelector(".article-prose");
+
+      if (prose) {
+        const proseRect = prose.getBoundingClientRect();
+        const bottomGuard = Math.min(240, window.innerHeight * 0.3);
+        const nextIsWithinContent = proseRect.top < window.innerHeight - 80 && proseRect.bottom > bottomGuard;
+        if (!nextIsWithinContent && isOpen) {
+          (document.querySelector("article") as HTMLElement | null)?.focus({ preventScroll: true });
+        }
+        setIsWithinContent(nextIsWithinContent);
+        if (!nextIsWithinContent) setIsOpen(false);
+      } else {
+        setIsWithinContent(true);
+      }
 
       for (const item of toc) {
         const element = document.getElementById(item.id);
@@ -69,7 +58,7 @@ export function MobileToc({ content }: MobileTocProps) {
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [toc]);
+  }, [isOpen, toc]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,6 +77,20 @@ export function MobileToc({ content }: MobileTocProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && activeItemRef.current && tocPanelRef.current) {
       const panel = tocPanelRef.current;
       const activeItem = activeItemRef.current;
@@ -102,6 +105,10 @@ export function MobileToc({ content }: MobileTocProps) {
         });
       }
     }
+
+    if (isOpen) {
+      (activeItemRef.current ?? firstItemRef.current)?.focus();
+    }
   }, [activeId, isOpen]);
 
   const handleTocClick = (id: string) => {
@@ -110,70 +117,75 @@ export function MobileToc({ content }: MobileTocProps) {
       block: "start",
     });
     setIsOpen(false);
+    triggerRef.current?.focus();
   };
 
-  if (toc.length === 0) return null;
+  if (toc.length === 0 || !isWithinContent) return null;
 
   return (
     <div
       ref={menuRef}
-      className="mobile-toc-wrapper fixed bottom-4 right-4 z-40 xl:hidden"
+      className="mobile-toc-wrapper fixed z-40 xl:hidden"
+      style={{
+        bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
+        right: "calc(1rem + env(safe-area-inset-right, 0px))",
+      }}
     >
-      <div
-        ref={tocPanelRef}
-        className={cn(
-          "floating-toc-panel absolute bottom-16 right-0 w-64 max-h-72 overflow-y-auto rounded-2xl bg-white/90 dark:bg-black/80 backdrop-blur-2xl border border-white/40 dark:border-white/15 shadow-2xl p-3 transition-all duration-300 ease-out origin-bottom-right",
-          isOpen
-            ? "opacity-100 scale-100 translate-y-0"
-            : "opacity-0 scale-95 translate-y-2 pointer-events-none"
-        )}
-        style={{
-          boxShadow:
-            "0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
-        }}
-      >
-        <h3 className="floating-toc-header text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-          목차
-        </h3>
-        <ul className="space-y-1">
-          {toc.map((item) => {
-            const isActive = activeId === item.id;
-            return (
-              <li
-                key={item.id}
-                className={cn(item.level === 3 && "ml-3")}
-              >
-                <button
-                  ref={isActive ? activeItemRef : null}
-                  onClick={() => handleTocClick(item.id)}
-                  className={cn(
-                    "toc-item block w-full text-left text-sm py-1.5 px-2 rounded-lg transition-all duration-200",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {item.text}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      {isOpen && (
+        <div
+          id="post-mobile-toc"
+          ref={tocPanelRef}
+          role="navigation"
+          aria-label="글 목차"
+          className="floating-toc-panel absolute bottom-14 right-0 w-64 max-h-72 overflow-y-auto rounded-2xl bg-white/95 dark:bg-black/90 backdrop-blur-2xl border border-border/60 shadow-2xl p-3 origin-bottom-right"
+          style={{
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+          }}
+        >
+          <h3 className="floating-toc-header text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
+            목차
+          </h3>
+          <ul className="space-y-1">
+            {toc.map((item, index) => {
+              const isActive = activeId === item.id;
+              return (
+                <li key={item.id} className={cn(item.level === 3 && "ml-3")}>
+                  <button
+                    ref={(element) => {
+                      if (index === 0) firstItemRef.current = element;
+                      if (isActive) activeItemRef.current = element;
+                    }}
+                    onClick={() => handleTocClick(item.id)}
+                    className={cn(
+                      "toc-item block w-full text-left text-sm py-2 px-2 rounded-lg transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"
+                    )}
+                  >
+                    {item.text}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "목차 닫기" : "목차 열기"}
+        aria-expanded={isOpen}
+        aria-controls="post-mobile-toc"
         className={cn(
-          "mobile-toc-trigger flex items-center justify-center w-14 h-14 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-2xl border border-white/40 dark:border-white/15 shadow-2xl text-foreground transition-all duration-300 hover:scale-110 active:scale-95",
+          "mobile-toc-trigger flex items-center justify-center w-11 h-11 rounded-full bg-background/95 backdrop-blur-2xl border border-border/70 shadow-lg text-foreground transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isOpen && "bg-primary/20 text-primary"
         )}
         style={{
-          boxShadow:
-            "0 4px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+          boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
         }}
       >
-        <List className="h-5 w-5" />
+        <List className="h-4 w-4" />
       </button>
     </div>
   );
