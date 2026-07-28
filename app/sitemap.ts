@@ -1,9 +1,11 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { companyProducts } from "@/lib/product-data";
+import { siteConfig } from "@/lib/site-config";
 
 export const revalidate = 86400; // 24시간마다 sitemap 재생성 (DB 업데이트 반영)
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 정적 페이지 URL
@@ -69,6 +71,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
   ];
+  const productPages = companyProducts.map((product) => ({
+    url: `${siteUrl}/products/${product.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
 
   try {
     // 게시된 Long 포스트 가져오기
@@ -153,8 +161,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
       }));
 
-    return [...staticPages, ...longPostUrls, ...shortPostUrls, ...seriesUrls, ...tagUrls];
+    return [...staticPages, ...productPages, ...longPostUrls, ...shortPostUrls, ...seriesUrls, ...tagUrls];
   } catch {
-    return staticPages;
+    return [...staticPages, ...productPages];
   }
 }

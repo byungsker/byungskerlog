@@ -1,23 +1,29 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: mockPrisma,
-}));
+vi.mock("@/lib/prisma", async () => {
+  const { mockPrisma } = await import("../mocks/prisma");
+  return { prisma: mockPrisma };
+});
 
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
+  isAuthorizedAdmin: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { GET, POST } from "@/app/api/posts/route";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
+import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
+const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
+const mockRevalidateTag = vi.mocked(revalidateTag);
 
 function createGetRequest(path: string): NextRequest {
   return new NextRequest(new URL(path, "http://localhost:3000"));
@@ -31,10 +37,12 @@ function createPostRequest(path: string, body: object): NextRequest {
   });
 }
 
-describe("GET /api/posts", () => {
+describe("게시글 목록 조회 GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
+    mockRevalidateTag.mockReset();
   });
 
   it("게시글 목록을 성공적으로 조회한다", async () => {
@@ -86,16 +94,51 @@ describe("GET /api/posts", () => {
     expect(data.pagination.page).toBe(2);
     expect(data.pagination.limit).toBe(10);
   });
+
+  it("비로그인 사용자는 비공개 게시글 목록을 요청할 수 없다", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.code).toBe("UNAUTHORIZED");
+    expect(mockPrisma.post.findMany).not.toHaveBeenCalled();
+  });
+
+  it("관리자는 비공개 게시글을 포함해 조회할 수 있다", async () => {
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(0);
+    mockPrisma.post.findMany.mockResolvedValue([]);
+    mockPrisma.postView.findMany.mockResolvedValue([]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} })
+    );
+  });
 });
 
-describe("POST /api/posts", () => {
+describe("게시글 생성 POST /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
   });
 
   it("인증된 사용자가 게시글을 생성할 수 있다", async () => {
-    mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.findFirst.mockResolvedValue(null);
     mockPrisma.post.create.mockResolvedValue({
       id: "new-post-1",
@@ -122,6 +165,8 @@ describe("POST /api/posts", () => {
     expect(response.status).toBe(201);
     expect(data.title).toBe("새 게시글");
     expect(mockPrisma.post.create).toHaveBeenCalled();
+    expect(mockRevalidateTag).toHaveBeenCalledWith("posts", "max");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("short-posts", "max");
   });
 
   it("인증되지 않은 사용자는 401 에러를 받는다", async () => {
@@ -140,8 +185,33 @@ describe("POST /api/posts", () => {
     expect(data.code).toBe("UNAUTHORIZED");
   });
 
+  it("관리자가 아닌 인증 사용자는 403 에러를 받는다", async () => {
+    mockGetAuthUser.mockResolvedValue({
+      id: "user-1",
+      primaryEmail: "reader@example.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(false);
+
+    const response = await POST(
+      createPostRequest("/api/posts", {
+        title: "새 게시글",
+        slug: "new-post",
+        content: "내용입니다",
+      })
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.code).toBe("FORBIDDEN");
+    expect(mockPrisma.post.create).not.toHaveBeenCalled();
+  });
+
   it("필수 필드가 누락되면 400 에러를 받는다", async () => {
-    mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
 
     const request = createPostRequest("/api/posts", {
       title: "제목만",

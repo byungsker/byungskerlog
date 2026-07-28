@@ -36,7 +36,7 @@ export function Header() {
     { label: "Series", href: "/series" },
     { label: "Books", href: "/books" },
     { label: "Tags", href: "/tags" },
-    { label: "Product", href: "/products" },
+    { label: "만든 제품", href: "/products" },
     { label: "About", href: "/about" },
   ];
 
@@ -68,7 +68,7 @@ export function Header() {
             />
           </Link>
 
-          <nav className="desktop-nav hidden md:flex items-center gap-6">
+          <nav className="desktop-nav hidden items-center gap-4 md:flex lg:gap-6">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -80,7 +80,7 @@ export function Header() {
                   href={item.href}
                   prefetch={true}
                   className={cn(
-                    "text-sm font-medium transition-colors hover:text-primary",
+                    "desktop-nav-link inline-flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm font-medium transition-colors hover:text-primary",
                     isActive ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -101,7 +101,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden"
+            className="mobile-menu-trigger min-h-11 min-w-11 md:hidden"
             onClick={() => setIsOpen(true)}
             aria-label="메뉴 열기"
           >
@@ -110,7 +110,12 @@ export function Header() {
 
           <SwipeDrawer open={isOpen} onOpenChange={setIsOpen}>
             <SwipeDrawerHeader className="mobile-menu-header flex-row items-center justify-end">
-              <Button variant="ghost" size="sm" className="gap-2" onClick={() => setIsOpen(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mobile-menu-close min-h-11 min-w-11 gap-2"
+                onClick={() => setIsOpen(false)}
+              >
                 <ChevronsRight className="h-5 w-5" />
                 접기
               </Button>
@@ -130,7 +135,7 @@ export function Header() {
                         prefetch={true}
                         onClick={() => setIsOpen(false)}
                         className={cn(
-                          "text-lg font-medium transition-colors hover:text-primary px-4 py-2",
+                          "mobile-nav-link inline-flex min-h-11 min-w-11 items-center px-4 py-2 text-lg font-medium transition-colors hover:text-primary",
                           isActive ? "text-foreground" : "text-muted-foreground"
                         )}
                       >

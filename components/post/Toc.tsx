@@ -2,12 +2,7 @@
 
 import { useEffect, useSyncExternalStore, useState, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
+import { extractMarkdownHeadings } from "@/lib/markdown-content";
 
 const CONTENT_MAX_WIDTH = 768;
 const TOC_WIDTH = 280;
@@ -43,30 +38,7 @@ export function TableOfContents({ content }: { content: string }) {
     return { tocLeft: visible ? newTocLeft : null, isVisible: visible };
   }, [viewportWidth]);
 
-  const toc = useMemo(() => {
-    const headingRegex = /^(#{1,3})\s+(.+)$/gm;
-    const headings: TocItem[] = [];
-    const idCounts: Record<string, number> = {};
-    let match;
-
-    while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length;
-      const text = match[2].trim();
-      const baseId = text
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w가-힣-]/g, "");
-
-      // 중복 ID 처리: 첫 번째는 그대로, 이후에는 -1, -2 등 suffix 추가
-      const count = idCounts[baseId] || 0;
-      const id = count === 0 ? baseId : `${baseId}-${count}`;
-      idCounts[baseId] = count + 1;
-
-      headings.push({ id, text, level });
-    }
-
-    return headings;
-  }, [content]);
+  const toc = useMemo(() => extractMarkdownHeadings(content), [content]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -114,14 +86,8 @@ export function TableOfContents({ content }: { content: string }) {
   if (toc.length === 0 || !isVisible || tocLeft === null) return null;
 
   return (
-    <nav
-      className="toc-nav fixed top-24 hidden xl:block"
-      style={{ left: tocLeft, width: TOC_WIDTH }}
-    >
-      <div
-        ref={tocContainerRef}
-        className="toc-container p-6 max-h-[calc(100vh-8rem)] overflow-y-auto bg-transparent"
-      >
+    <nav className="toc-nav fixed top-24 hidden xl:block" style={{ left: tocLeft, width: TOC_WIDTH }}>
+      <div ref={tocContainerRef} className="toc-container p-6 max-h-[calc(100vh-8rem)] overflow-y-auto bg-transparent">
         <h2 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">목차</h2>
         <ul className="space-y-2.5">
           {toc.map((item) => {

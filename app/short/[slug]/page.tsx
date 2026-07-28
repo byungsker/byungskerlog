@@ -5,16 +5,20 @@ import type { Metadata } from "next";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 import { getPost } from "@/lib/post-data";
+import { siteConfig } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 slug도 ISR로 처리
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 const SHORT_NOINDEX_THRESHOLD = 300;
 
 function stripMarkdown(content: string): string {
-  return content.replace(/[#*`~>\[\]()!\-_]/g, "").replace(/\s+/g, " ").trim();
+  return content
+    .replace(/[#*`~>\[\]()!\-_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export async function generateStaticParams() {
@@ -85,7 +89,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: `${post.title} written by Byungsker`,
       description,
       images: [ogImageUrl],
-      creator: "@byungsker",
     },
     alternates: {
       canonical: canonicalUrl,

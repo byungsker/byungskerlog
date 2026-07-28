@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const body = await request.json();
@@ -146,6 +150,7 @@ export async function POST(request: NextRequest) {
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${slug}`);
+    revalidatePostListCaches();
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
@@ -164,12 +169,24 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const tag = searchParams.get("tag");
-    const includeUnpublished = searchParams.get("includeUnpublished") === "true";
+    const includeUnpublishedRequested = searchParams.get("includeUnpublished") === "true";
     const sortBy = searchParams.get("sortBy") || "desc";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const type = searchParams.get("type");
     const search = searchParams.get("search");
+    let includeUnpublished = false;
+
+    if (includeUnpublishedRequested) {
+      const user = await getAuthUser();
+      if (!user) {
+        throw ApiError.unauthorized();
+      }
+      if (!isAuthorizedAdmin(user)) {
+        throw ApiError.forbidden("Administrator access required");
+      }
+      includeUnpublished = true;
+    }
 
     const skip = (page - 1) * limit;
 

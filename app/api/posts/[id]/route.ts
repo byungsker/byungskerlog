@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
 import { revalidatePath } from "next/cache";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,6 +10,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const { id } = await params;
@@ -31,6 +35,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePostListCaches();
 
     return NextResponse.json({ message: "Post deleted successfully" }, { status: 200 });
   } catch (error) {
@@ -49,6 +54,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!post) {
       throw ApiError.notFound("Post");
     }
+    if (!post.published) {
+      const user = await getAuthUser();
+      if (!user || !isAuthorizedAdmin(user)) {
+        throw ApiError.notFound("Post");
+      }
+    }
 
     return NextResponse.json(post);
   } catch (error) {
@@ -61,6 +72,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const { id } = await params;
@@ -125,6 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePostListCaches();
 
     return NextResponse.json(post);
   } catch (error) {

@@ -1,12 +1,17 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { PostListLoader } from "@/components/post/PostListLoader";
 import { PostListSkeleton } from "@/components/skeleton/PostListSkeleton";
 import { AdSense } from "@/components/seo/Adsense";
-import type { Metadata } from "next";
+import { HomeProducts } from "@/components/products/HomeProducts";
+import { siteConfig } from "@/lib/site-config";
 
-export const revalidate = 3600;
+// The homepage depends on live database content. Render it at request time so
+// production builds do not require database connectivity and DB failures reach
+// framework error handling instead of being cached as an empty list.
+export const dynamic = "force-dynamic";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
   description:
@@ -23,7 +28,6 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-5xl mx-auto">
-
         <AdSense
           adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_TOP || ""}
           adFormat="fluid"
@@ -34,6 +38,8 @@ export default function Home() {
         <Suspense fallback={<PostListSkeleton />}>
           <PostListLoader />
         </Suspense>
+
+        <HomeProducts />
 
         <AdSense
           adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_BOTTOM || ""}

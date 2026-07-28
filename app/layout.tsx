@@ -13,6 +13,7 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
+import { siteConfig } from "@/lib/site-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,7 +25,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -87,7 +88,6 @@ export const metadata: Metadata = {
     title: "Byungsker Log",
     description: "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그",
     images: [`${siteUrl}/og-image.png`],
-    creator: "@byungsker",
   },
   robots: {
     index: true,

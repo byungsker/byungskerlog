@@ -1,139 +1,89 @@
-import { ProductCard } from "@/components/common/ProductCard";
-import { Globe, Package, Zap, Smartphone } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
+import { ProductCard } from "@/components/common/ProductCard";
+import { Card, CardDescription, CardHeader } from "@/components/ui/Card";
+import { companyProducts, legacyProjects } from "@/lib/product-data";
+import { siteConfig } from "@/lib/site-config";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
-  title: "Products | Byungsker Log",
-  description: "병스커가 개발한 다양한 프로덕트들을 확인해보세요. Web, NPM, SaaS, App 카테고리별 프로젝트를 소개합니다.",
+  title: "만든 제품",
+  description: "제가 반복해서 겪은 문제를 직접 해결하기 위해 만들고, 먼저 계속 사용하며 다듬는 제품을 소개합니다.",
   alternates: {
     canonical: `${siteUrl}/products`,
   },
   openGraph: {
-    title: "Products | Byungsker Log",
-    description: "병스커가 개발한 다양한 프로덕트들을 확인해보세요.",
+    title: "만든 제품 | Byungsker Log",
+    description: "제가 반복해서 겪은 문제를 직접 해결하기 위해 만들고, 먼저 계속 사용하며 다듬는 제품을 소개합니다.",
     url: `${siteUrl}/products`,
     type: "website",
   },
 };
 
-interface Product {
-  name: string;
-  description: string;
-  url: string;
-  status?: "released" | "in-progress";
-}
-
-interface ProductCategory {
-  category: string;
-  icon: React.ComponentType<{ className?: string }>;
-  products: Product[];
-}
-
-const productData: ProductCategory[] = [
-  {
-    category: "Web",
-    icon: Globe,
-    products: [
-      {
-        name: "JSON Animation Viewer",
-        description: "JSON 애니메이션을 실시간으로 미리보고 편집할 수 있는 웹 뷰어",
-        url: "https://json-animation-viewer.vercel.app/",
-        status: "released",
-      },
-    ],
-  },
-  {
-    category: "NPM",
-    icon: Package,
-    products: [
-      {
-        name: "Figmable",
-        description: "Figma 디자인을 프로그래밍 방식으로 다룰 수 있는 라이브러리",
-        url: "https://www.npmjs.com/package/figmable",
-        status: "released",
-      },
-      {
-        name: "Bridge-zip",
-        description: "브릿지 패턴을 활용한 압축 라이브러리",
-        url: "https://www.npmjs.com/package/bridge-zip",
-        status: "released",
-      },
-      {
-        name: "markyfy",
-        description: "마크다운 처리를 위한 유틸리티 라이브러리",
-        url: "https://www.npmjs.com/package/markyfy",
-        status: "released",
-      },
-    ],
-  },
-  {
-    category: "SaaS",
-    icon: Zap,
-    products: [
-      {
-        name: "Brand AI",
-        description: "AI 기반 브랜딩 솔루션",
-        url: "#",
-        status: "in-progress",
-      },
-    ],
-  },
-  {
-    category: "App",
-    icon: Smartphone,
-    products: [
-      {
-        name: "Bookgolas (litgoal)",
-        description: "독서 목표를 관리하고 추적하는 앱",
-        url: "https://apps.apple.com/kr/app/litgoal/id6748870919",
-        status: "released",
-      },
-      {
-        name: "꾸깃",
-        description: "꾸준한 습관 형성을 돕는 서비스",
-        url: "https://ggugitt.com/",
-        status: "released",
-      },
-      {
-        name: "오키나와",
-        description: "여행 정보 및 가이드 서비스",
-        url: "https://www.oknawa.com/",
-        status: "released",
-      },
-    ],
-  },
-];
-
 export default function ProductsPage() {
   return (
-    <div className="products-page-container container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-6xl mx-auto">
-        <header className="page-header mb-12">
-          <h1 className="text-4xl font-bold mb-4">Products</h1>
-          <p className="text-muted-foreground text-lg">
-            개발하고 운영하고 있는 다양한 프로덕트들을 소개합니다.
+    <div className="products-page-container container mx-auto px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto max-w-5xl">
+        <header className="page-header max-w-3xl">
+          <p className="text-sm font-medium text-primary">병스커랩</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">만든 제품</h1>
+          <p className="mt-6 text-lg leading-8 text-foreground/80">
+            제가 반복해서 겪은 문제를 직접 해결하기 위해 만든 제품들입니다. 먼저 제가 계속 사용하고, 다른 사람에게도
+            유용한지 확인하며 다듬습니다.
           </p>
         </header>
 
-        <section className="products-section space-y-12">
-          {productData.map((categoryData) => {
-            const Icon = categoryData.icon;
-            return (
-              <article key={categoryData.category} className="category-section">
-                <div className="category-header flex items-center gap-3 mb-6">
-                  <Icon className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-semibold">{categoryData.category}</h2>
-                </div>
-                <div className="products-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categoryData.products.map((product) => (
-                    <ProductCard key={product.name} product={product} />
-                  ))}
-                </div>
-              </article>
-            );
-          })}
+        <section className="byungskerlab-products mt-14" aria-labelledby="byungskerlab-products-title">
+          <div className="section-heading mb-6">
+            <h2 id="byungskerlab-products-title" className="text-2xl font-bold">
+              지금 공개한 제품
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              직접 쓰며 운영하고 있는 두 제품의 문제와 제작 배경을 소개합니다.
+            </p>
+          </div>
+          <div className="products-grid grid grid-cols-1 gap-6 md:grid-cols-2">
+            {companyProducts.map((product) => (
+              <ProductCard key={product.slug} product={product} />
+            ))}
+          </div>
+        </section>
+
+        <section
+          className="legacy-projects mt-20 border-t border-border/60 pt-10"
+          aria-labelledby="legacy-projects-title"
+        >
+          <div className="section-heading mb-6 max-w-2xl">
+            <h2 id="legacy-projects-title" className="text-2xl font-bold">
+              이전 프로젝트
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              병스커랩 제품과는 별도로, 이전에 공개한 개인 프로젝트와 패키지입니다.
+            </p>
+          </div>
+          <div className="legacy-project-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {legacyProjects.map((project) => (
+              <Card key={project.name} className="legacy-project-card h-full border-border/50 bg-card/40 py-0">
+                <CardHeader className="py-5">
+                  <span className="text-xs font-medium text-muted-foreground">{project.category}</span>
+                  <h3 className="text-lg font-semibold leading-none">
+                    <a
+                      href={project.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-sm hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {project.name}
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span className="sr-only">(새 창)</span>
+                    </a>
+                  </h3>
+                  <CardDescription className="leading-6">{project.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </section>
       </div>
     </div>

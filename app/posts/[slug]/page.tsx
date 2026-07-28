@@ -4,11 +4,12 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
+import { siteConfig } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 slug도 ISR로 처리
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export async function generateStaticParams() {
   // 빌드 시 프리렌더링 스킵 → 첫 접속 시 ISR 생성 (Neon 무료 티어 OOM 방지)
@@ -82,7 +83,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: `${post.title} written by Byungsker`,
       description,
       images: [ogImageUrl],
-      creator: "@byungsker",
     },
     alternates: {
       canonical: canonicalUrl,

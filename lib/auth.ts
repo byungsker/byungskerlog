@@ -1,5 +1,9 @@
 import { stackServerApp } from "@/stack/server";
 
+interface AuthorizedUser {
+  id: string;
+}
+
 export async function getAuthUser() {
   if (!stackServerApp) {
     return null;
@@ -11,11 +15,16 @@ export async function getAuthUser() {
   }
 }
 
-// 관리자 ID 목록 (환경변수로 관리)
-const ADMIN_USER_IDS = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || [];
-
 export function isAdminUser(userId: string): boolean {
-  return ADMIN_USER_IDS.includes(userId);
+  const adminUserIds =
+    process.env.ADMIN_USER_IDS?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean) || [];
+  return adminUserIds.includes(userId);
+}
+
+export function isAuthorizedAdmin(user: AuthorizedUser): boolean {
+  return isAdminUser(user.id);
 }
 
 export async function getAuthUserWithAdminCheck() {
@@ -25,6 +34,6 @@ export async function getAuthUserWithAdminCheck() {
   }
   return {
     user,
-    isAdmin: isAdminUser(user.id),
+    isAdmin: isAuthorizedAdmin(user),
   };
 }
