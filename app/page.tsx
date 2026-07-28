@@ -6,7 +6,10 @@ import { HomeProducts } from "@/components/products/HomeProducts";
 import { siteConfig } from "@/lib/site-config";
 import type { Metadata } from "next";
 
-export const revalidate = 3600;
+// The homepage depends on live database content. Render it at request time so
+// production builds do not require database connectivity and DB failures reach
+// framework error handling instead of being cached as an empty list.
+export const dynamic = "force-dynamic";
 
 const siteUrl = siteConfig.url;
 
