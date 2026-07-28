@@ -105,11 +105,12 @@ export function MobileToc({ content }: MobileTocProps) {
         });
       }
     }
-
-    if (isOpen) {
-      (activeItemRef.current ?? firstItemRef.current)?.focus();
-    }
   }, [activeId, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    (activeItemRef.current ?? firstItemRef.current)?.focus();
+  }, [isOpen]);
 
   const handleTocClick = (id: string) => {
     document.getElementById(id)?.scrollIntoView({

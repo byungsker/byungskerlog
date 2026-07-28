@@ -80,7 +80,7 @@ export function Header() {
                   href={item.href}
                   prefetch={true}
                   className={cn(
-                    "inline-flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm font-medium transition-colors hover:text-primary",
+                    "desktop-nav-link inline-flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm font-medium transition-colors hover:text-primary",
                     isActive ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -101,7 +101,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 min-w-11 md:hidden"
+            className="mobile-menu-trigger min-h-11 min-w-11 md:hidden"
             onClick={() => setIsOpen(true)}
             aria-label="메뉴 열기"
           >
@@ -113,7 +113,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 min-w-11 gap-2"
+                className="mobile-menu-close min-h-11 min-w-11 gap-2"
                 onClick={() => setIsOpen(false)}
               >
                 <ChevronsRight className="h-5 w-5" />
@@ -135,7 +135,7 @@ export function Header() {
                         prefetch={true}
                         onClick={() => setIsOpen(false)}
                         className={cn(
-                          "inline-flex min-h-11 min-w-11 items-center px-4 py-2 text-lg font-medium transition-colors hover:text-primary",
+                          "mobile-nav-link inline-flex min-h-11 min-w-11 items-center px-4 py-2 text-lg font-medium transition-colors hover:text-primary",
                           isActive ? "text-foreground" : "text-muted-foreground"
                         )}
                       >

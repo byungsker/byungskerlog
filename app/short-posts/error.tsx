@@ -2,7 +2,11 @@
 
 import { Button } from "@/components/ui/Button";
 
-export default function ShortPostsError({ reset }: { reset: () => void }) {
+interface ShortPostsErrorProps {
+  reset: () => void;
+}
+
+export default function ShortPostsError({ reset }: ShortPostsErrorProps) {
   return (
     <div className="container mx-auto px-4 py-20">
       <div className="mx-auto max-w-xl text-center">

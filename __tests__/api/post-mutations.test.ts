@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
-vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
+vi.mock("@/lib/prisma", async () => {
+  const { mockPrisma } = await import("../mocks/prisma");
+  return { prisma: mockPrisma };
+});
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
   isAuthorizedAdmin: vi.fn(),
@@ -15,6 +17,7 @@ vi.mock("next/cache", () => ({
 import { DELETE, PATCH } from "@/app/api/posts/[id]/route";
 import { POST as bulkPost } from "@/app/api/posts/bulk/route";
 import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
+import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
@@ -27,7 +30,7 @@ function nonAdminUser() {
   } as Awaited<ReturnType<typeof getAuthUser>>;
 }
 
-describe("post mutation authorization", () => {
+describe("게시글 변경 권한", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();

@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { companyProducts, getProductBySlug, legacyProjects } from "@/lib/product-data";
 
-describe("product-data", () => {
+describe("제품 데이터", () => {
   it("공개 승인된 병스커랩 제품만 제공한다", () => {
     expect(companyProducts.map((product) => product.slug)).toEqual(["bookgolas", "baroguni"]);
-    expect(JSON.stringify(companyProducts)).not.toMatch(/bOpenCSMap|trading-agent-office/i);
+    expect(JSON.stringify(companyProducts)).not.toMatch(/OpenCSMap|trading-agent-office/i);
+  });
+
+  it("각 제품에 크롤러가 사용할 수 있는 래스터 OG 이미지를 제공한다", () => {
+    for (const product of companyProducts) {
+      expect(product.ogImage.src).toMatch(/\.(png|jpe?g|webp)$/i);
+      expect(product.ogImage.width).toBeGreaterThanOrEqual(200);
+      expect(product.ogImage.height).toBeGreaterThanOrEqual(200);
+    }
   });
 
   it("각 제품에 내부 이야기 링크를 만들 수 있는 slug와 검증된 외부 링크가 있다", () => {

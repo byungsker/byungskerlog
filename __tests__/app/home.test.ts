@@ -15,7 +15,7 @@ vi.mock("@/components/products/HomeProducts", () => ({
 
 import { dynamic } from "@/app/page";
 
-describe("home page rendering mode", () => {
+describe("홈 페이지 렌더링 모드", () => {
   it("빌드 시 데이터베이스를 요구하지 않도록 요청 시점에 렌더링한다", () => {
     expect(dynamic).toBe("force-dynamic");
   });

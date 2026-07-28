@@ -4,7 +4,7 @@ vi.mock("@/stack/server", () => ({ stackServerApp: null }));
 
 import { isAuthorizedAdmin } from "@/lib/auth";
 
-describe("isAuthorizedAdmin", () => {
+describe("관리자 권한 판별", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });

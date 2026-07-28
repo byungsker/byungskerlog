@@ -79,4 +79,25 @@ describe("GET /api/posts/[id]", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("일반 로그인 사용자는 비공개 게시글을 조회할 수 없다", async () => {
+    const user = {
+      id: "reader-1",
+      primaryEmail: "reader@example.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>;
+    mockPrisma.post.findUnique.mockResolvedValue({
+      id: "post-1",
+      title: "초안",
+      published: false,
+    });
+    mockGetAuthUser.mockResolvedValue(user);
+    mockIsAuthorizedAdmin.mockReturnValue(false);
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/posts/post-1"),
+      params
+    );
+
+    expect(response.status).toBe(404);
+  });
 });

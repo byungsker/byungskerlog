@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: mockPrisma,
-}));
+vi.mock("@/lib/prisma", async () => {
+  const { mockPrisma } = await import("../mocks/prisma");
+  return { prisma: mockPrisma };
+});
 
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock("next/cache", () => ({
 
 import { GET, POST } from "@/app/api/posts/route";
 import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
-import { revalidateTag } from "next/cache";
+import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
@@ -36,7 +37,7 @@ function createPostRequest(path: string, body: object): NextRequest {
   });
 }
 
-describe("GET /api/posts", () => {
+describe("게시글 목록 조회 GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
@@ -125,7 +126,7 @@ describe("GET /api/posts", () => {
   });
 });
 
-describe("POST /api/posts", () => {
+describe("게시글 생성 POST /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();

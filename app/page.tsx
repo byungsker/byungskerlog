@@ -1,10 +1,10 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { PostListLoader } from "@/components/post/PostListLoader";
 import { PostListSkeleton } from "@/components/skeleton/PostListSkeleton";
 import { AdSense } from "@/components/seo/Adsense";
 import { HomeProducts } from "@/components/products/HomeProducts";
 import { siteConfig } from "@/lib/site-config";
-import type { Metadata } from "next";
 
 // The homepage depends on live database content. Render it at request time so
 // production builds do not require database connectivity and DB failures reach

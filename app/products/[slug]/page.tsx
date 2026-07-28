@@ -43,10 +43,10 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
       type: "website",
       images: [
         {
-          url: `${siteUrl}${product.logo.src}`,
-          width: product.logo.width,
-          height: product.logo.height,
-          alt: product.logo.alt,
+          url: `${siteUrl}${product.ogImage.src}`,
+          width: product.ogImage.width,
+          height: product.ogImage.height,
+          alt: product.ogImage.alt,
         },
       ],
     },

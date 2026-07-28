@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { siteConfig } from "@/lib/site-config";
 
-describe("StructuredData", () => {
+describe("구조화 데이터", () => {
   it("전역 구조화 데이터에 권위 도메인만 사용한다", () => {
     const markup = renderToStaticMarkup(<StructuredData type="blog" />);
     const json = markup.match(/<script[^>]*>(.*)<\/script>/)?.[1];

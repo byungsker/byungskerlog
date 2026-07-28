@@ -31,9 +31,10 @@ export interface Product {
   applicationCategory: string;
   operatingSystem: string;
   logo: ProductImage;
+  ogImage: ProductImage;
   images: ProductImage[];
   features: ProductFeature[];
-  officialLinks: ProductLink[];
+  officialLinks: [ProductLink, ...ProductLink[]];
   relatedPosts: Array<{
     title: string;
     href: string;
@@ -64,6 +65,13 @@ export const companyProducts: Product[] = [
     applicationCategory: "BookApplication",
     operatingSystem: "iOS",
     logo: {
+      src: "/products/bookgolas/logo.png",
+      alt: "Bookgolas 앱 아이콘",
+      caption: "Bookgolas",
+      width: 600,
+      height: 600,
+    },
+    ogImage: {
       src: "/products/bookgolas/logo.png",
       alt: "Bookgolas 앱 아이콘",
       caption: "Bookgolas",
@@ -127,6 +135,13 @@ export const companyProducts: Product[] = [
       caption: "바로구니",
       width: 72,
       height: 72,
+    },
+    ogImage: {
+      src: "/products/baroguni/cart-detail.jpg",
+      alt: "바로구니에서 장보기 품목과 가격을 함께 확인하는 화면",
+      caption: "바로구니 장바구니 화면",
+      width: 1284,
+      height: 2778,
     },
     images: [
       {

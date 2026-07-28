@@ -1,5 +1,9 @@
 import { stackServerApp } from "@/stack/server";
 
+interface AuthorizedUser {
+  id: string;
+}
+
 export async function getAuthUser() {
   if (!stackServerApp) {
     return null;
@@ -19,7 +23,7 @@ export function isAdminUser(userId: string): boolean {
   return adminUserIds.includes(userId);
 }
 
-export function isAuthorizedAdmin(user: { id: string }): boolean {
+export function isAuthorizedAdmin(user: AuthorizedUser): boolean {
   return isAdminUser(user.id);
 }
 

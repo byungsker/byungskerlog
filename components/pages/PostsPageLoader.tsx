@@ -1,6 +1,6 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getPostListCacheKey } from "@/lib/post-cache";
-import { unstable_cache } from "next/cache";
 import { PostsPageClient } from "./PostsPageClient";
 
 interface PostsPageLoaderProps {

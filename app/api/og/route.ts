@@ -100,10 +100,13 @@ function isBlockedIpv6(address: string): boolean {
 
   // Public IPv6 destinations must be in the IANA global-unicast 2000::/3
   // allocation. This excludes loopback, mapped/compatible IPv4, ULA,
-  // link-local, multicast, NAT64, and other special-purpose ranges.
+  // link-local, multicast, NAT64, IPv4 transition, and other special-purpose
+  // ranges.
   const isGlobalUnicast = hextets[0] >= 0x2000 && hextets[0] <= 0x3fff;
   const isDocumentationRange = hextets[0] === 0x2001 && hextets[1] === 0x0db8;
-  return !isGlobalUnicast || isDocumentationRange;
+  const isTeredo = hextets[0] === 0x2001 && hextets[1] === 0x0000;
+  const isSixToFour = hextets[0] === 0x2002;
+  return !isGlobalUnicast || isDocumentationRange || isTeredo || isSixToFour;
 }
 
 export function isBlockedAddress(address: string): boolean {
