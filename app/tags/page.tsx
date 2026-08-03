@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { TagsPageClient } from "@/components/pages/TagsPageClient";
 import type { Metadata } from "next";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { isPostIndexable } from "@/lib/content-policy";
 
 export const revalidate = 3600;
 
@@ -25,9 +27,11 @@ async function getAllTags() {
     const tags = await prisma.tag.findMany({
       select: {
         name: true,
-        _count: {
+        posts: {
+          where: { published: true, slug: getPublicPostSlugFilter() },
           select: {
-            posts: { where: { published: true } },
+            content: true,
+            type: true,
           },
         },
       },
@@ -36,7 +40,10 @@ async function getAllTags() {
       },
     });
 
-    return tags.filter((t) => t._count.posts > 0).map((t) => ({ tag: t.name, count: t._count.posts }));
+    return tags.flatMap((tag) => {
+      const count = tag.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
+      return count > 0 ? [{ tag: tag.name, count }] : [];
+    });
   } catch {
     return [];
   }

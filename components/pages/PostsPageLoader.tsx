@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getPostListCacheKey } from "@/lib/post-cache";
 import { PostsPageClient } from "./PostsPageClient";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 interface PostsPageLoaderProps {
   page: number;
@@ -17,7 +18,7 @@ const getPosts = (page: number) =>
       try {
         const [postsRaw, total] = await Promise.all([
           prisma.post.findMany({
-            where: { published: true, type: "LONG" },
+            where: { published: true, type: "LONG", slug: getPublicPostSlugFilter() },
             orderBy: { createdAt: "desc" },
             skip,
             take: limit,
@@ -39,7 +40,7 @@ const getPosts = (page: number) =>
               },
             },
           }),
-          prisma.post.count({ where: { published: true, type: "LONG" } }),
+          prisma.post.count({ where: { published: true, type: "LONG", slug: getPublicPostSlugFilter() } }),
         ]);
 
         const posts = postsRaw.map((p) => ({

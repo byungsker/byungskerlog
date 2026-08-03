@@ -1,13 +1,22 @@
 import { prisma } from "@/lib/prisma";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { siteConfig } from "@/lib/site-config";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+const siteUrl = siteConfig.url;
 
 export async function GET() {
-  let posts: { slug: string; title: string; excerpt: string | null; createdAt: Date; tags: string[] }[] = [];
+  let posts: {
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    createdAt: Date;
+    type: "LONG" | "SHORT";
+    tags: string[];
+  }[] = [];
 
   try {
     const rawPosts = await prisma.post.findMany({
-      where: { published: true },
+      where: { published: true, slug: getPublicPostSlugFilter() },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {
@@ -15,6 +24,7 @@ export async function GET() {
         title: true,
         excerpt: true,
         createdAt: true,
+        type: true,
         tags: { select: { name: true } },
       },
     });
@@ -30,11 +40,12 @@ export async function GET() {
     .map((post) => {
       const pubDate = new Date(post.createdAt).toUTCString();
       const categories = post.tags.map((tag) => `<category>${escapeXml(tag)}</category>`).join("\n        ");
+      const postPath = post.type === "SHORT" ? "short" : "posts";
 
       return `    <item>
       <title>${escapeXml(post.title)}</title>
-      <link>${siteUrl}/posts/${post.slug}</link>
-      <guid isPermaLink="true">${siteUrl}/posts/${post.slug}</guid>
+      <link>${siteUrl}/${postPath}/${post.slug}</link>
+      <guid isPermaLink="true">${siteUrl}/${postPath}/${post.slug}</guid>
       <description>${escapeXml(post.excerpt || "")}</description>
       <pubDate>${pubDate}</pubDate>
       ${categories}

@@ -5,6 +5,7 @@ import { AboutPageActions } from "@/components/pages/AboutPageActions";
 import { ContributionGraph } from "@/components/analytics/ContributionGraph";
 
 import type { Metadata } from "next";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 export const revalidate = 3600;
 
@@ -48,7 +49,7 @@ export interface ContributionPost {
 async function getContributionPosts(): Promise<ContributionPost[]> {
   try {
     const posts = await prisma.post.findMany({
-      where: { published: true },
+      where: { published: true, slug: getPublicPostSlugFilter() },
       select: {
         id: true,
         title: true,

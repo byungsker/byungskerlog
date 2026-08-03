@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPostListCacheKey } from "@/lib/post-cache";
 import { unstable_cache } from "next/cache";
 import { ShortPostsPageClient } from "./ShortPostsPageClient";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 interface ShortPostsPageLoaderProps {
   page: number;
@@ -17,7 +18,7 @@ const getShortPosts = (page: number) =>
       try {
         const [postsRaw, total] = await Promise.all([
           prisma.post.findMany({
-            where: { published: true, type: "SHORT" },
+            where: { published: true, type: "SHORT", slug: getPublicPostSlugFilter() },
             orderBy: { createdAt: "desc" },
             skip,
             take: limit,
@@ -38,7 +39,7 @@ const getShortPosts = (page: number) =>
               },
             },
           }),
-          prisma.post.count({ where: { published: true, type: "SHORT" } }),
+          prisma.post.count({ where: { published: true, type: "SHORT", slug: getPublicPostSlugFilter() } }),
         ]);
 
         const posts = postsRaw.map((p) => ({

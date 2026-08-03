@@ -77,6 +77,11 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     expect(data.posts).toHaveLength(1);
     expect(data.posts[0].title).toBe("테스트 포스트");
     expect(data.pagination.total).toBe(1);
+    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ slug: { notIn: ["웹앱에서-스플래시-스크린-만들기"] } }),
+      })
+    );
   });
 
   it("쿼리 파라미터로 필터링할 수 있다", async () => {
@@ -120,9 +125,7 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
 
     expect(response.status).toBe(200);
-    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} })
-    );
+    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
   });
 });
 
