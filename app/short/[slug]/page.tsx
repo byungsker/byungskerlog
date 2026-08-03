@@ -6,20 +6,12 @@ import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 import { getPost } from "@/lib/post-data";
 import { siteConfig } from "@/lib/site-config";
+import { isPostIndexable } from "@/lib/content-policy";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 slug도 ISR로 처리
 
 const siteUrl = siteConfig.url;
-
-const SHORT_NOINDEX_THRESHOLD = 300;
-
-function stripMarkdown(content: string): string {
-  return content
-    .replace(/[#*`~>\[\]()!\-_]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 export async function generateStaticParams() {
   // 빌드 시 프리렌더링 스킵 → 첫 접속 시 ISR 생성 (Neon 무료 티어 OOM 방지)
@@ -50,8 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
 
-  const plainTextLength = stripMarkdown(postData.content).length;
-  const isThin = plainTextLength < SHORT_NOINDEX_THRESHOLD;
+  const isThin = !isPostIndexable("SHORT", postData.content);
 
   const post = { ...postData, tags: postData.tags.map((t) => t.name) };
   const canonicalUrl = `${siteUrl}/short/${post.slug}`;

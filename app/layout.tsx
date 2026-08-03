@@ -10,7 +10,6 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Providers } from "./providers";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
 import { siteConfig } from "@/lib/site-config";
@@ -137,13 +136,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const adSenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", geistSans.variable, geistMono.variable)}>
         <StructuredData type="blog" />
-        {adSenseClientId && <ConditionalAdsenseScript clientId={adSenseClientId} />}
         {stackClientApp ? (
           <StackProvider app={stackClientApp}>
             <StackTheme>

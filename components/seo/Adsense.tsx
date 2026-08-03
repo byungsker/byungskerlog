@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { normalizeAdsenseClientId, normalizeAdsenseSlot } from "@/lib/adsense";
 import { useIsAdmin } from "@/lib/client-auth";
 
 interface AdSenseProps {
+  adClient?: string | null;
   adSlot: string;
   adFormat?: "auto" | "fluid";
   adLayoutKey?: string; // Required for In-feed ads (fluid format)
@@ -17,6 +19,7 @@ type WindowWithAdsbygoogle = Window & { adsbygoogle?: unknown[] };
 const emptySubscribe = () => () => {};
 
 export function AdSense({
+  adClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID,
   adSlot,
   adFormat = "auto",
   adLayoutKey,
@@ -24,7 +27,8 @@ export function AdSense({
   style,
   className,
 }: AdSenseProps) {
-  const adClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const normalizedClientId = normalizeAdsenseClientId(adClient);
+  const normalizedSlot = normalizeAdsenseSlot(adSlot);
   const isAdmin = useIsAdmin();
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -32,9 +36,16 @@ export function AdSense({
     () => false
   );
   const pushRef = useRef(false);
+  const adElementRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
-    if (!mounted || !adClient || pushRef.current) return;
+    const adElement = adElementRef.current;
+    if (!mounted || isAdmin || !normalizedClientId || !normalizedSlot || !adElement || pushRef.current) return;
+
+    if (adElement.dataset.adsbygoogleStatus) {
+      pushRef.current = true;
+      return;
+    }
 
     try {
       const isInIframe = typeof window !== "undefined" && window.self !== window.top;
@@ -46,9 +57,9 @@ export function AdSense({
     } catch (error) {
       console.error("AdSense error:", error);
     }
-  }, [mounted, adClient]);
+  }, [isAdmin, mounted, normalizedClientId, normalizedSlot]);
 
-  if (!mounted || !adClient || isAdmin) {
+  if (!mounted || !normalizedClientId || !normalizedSlot || isAdmin) {
     return null;
   }
 
@@ -58,10 +69,11 @@ export function AdSense({
   return (
     <div className={className} style={style}>
       <ins
+        ref={adElementRef}
         className="adsbygoogle"
         style={{ display: "block", ...style }}
-        data-ad-client={adClient}
-        data-ad-slot={adSlot}
+        data-ad-client={normalizedClientId}
+        data-ad-slot={normalizedSlot}
         data-ad-format={adFormat}
         {...(isInFeedAd && { "data-ad-layout-key": adLayoutKey })}
         {...(!isInFeedAd && { "data-full-width-responsive": fullWidthResponsive.toString() })}

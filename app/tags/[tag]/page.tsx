@@ -7,6 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PostsListSkeleton } from "@/components/skeleton/PostsListSkeleton";
 import type { Metadata } from "next";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { isPostIndexable } from "@/lib/content-policy";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 tag도 ISR로 처리
@@ -25,9 +27,11 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   const tagData = await prisma.tag.findUnique({
     where: { name: decodedTag },
     include: {
-      _count: {
+      posts: {
+        where: { published: true, slug: getPublicPostSlugFilter() },
         select: {
-          posts: { where: { published: true } },
+          content: true,
+          type: true,
         },
       },
     },
@@ -37,10 +41,11 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
     notFound();
   }
 
+  const indexablePostCount = tagData.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
   const title = `${decodedTag} | Tags | Byungsker Log`;
-  const description = `"${decodedTag}" 태그가 붙은 ${tagData._count.posts}개의 포스트를 확인하세요. 병스커의 기술 블로그에서 관련 글을 탐색해보세요.`;
+  const description = `"${decodedTag}" 태그가 붙은 ${indexablePostCount}개의 포스트를 확인하세요. 병스커의 기술 블로그에서 관련 글을 탐색해보세요.`;
 
-  const shouldIndex = tagData._count.posts >= 3;
+  const shouldIndex = indexablePostCount >= 3;
 
   return {
     title,
@@ -69,6 +74,7 @@ async function getPostsByTag(tagName: string) {
     const posts = await prisma.post.findMany({
       where: {
         published: true,
+        slug: getPublicPostSlugFilter(),
         tags: {
           some: { name: tagName },
         },

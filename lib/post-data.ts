@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 export async function getPost(slug: string) {
   const decodedSlug = decodeURIComponent(slug);
@@ -32,6 +33,7 @@ export async function getSeriesPosts(seriesId: string | null) {
     where: {
       published: true,
       seriesId,
+      slug: getPublicPostSlugFilter(),
     },
     orderBy: { createdAt: "asc" },
     select: { slug: true, title: true, createdAt: true },
@@ -50,7 +52,7 @@ export async function getPrevNextPosts(
 
   if (seriesId) {
     const seriesPosts = await prisma.post.findMany({
-      where: { published: true, seriesId, ...typeFilter },
+      where: { published: true, seriesId, slug: getPublicPostSlugFilter(), ...typeFilter },
       orderBy: { createdAt: "asc" },
       select: { slug: true, title: true, createdAt: true },
     });
@@ -64,7 +66,7 @@ export async function getPrevNextPosts(
       prevPost = seriesPosts[currentIndex - 1];
     } else {
       prevPost = await prisma.post.findFirst({
-        where: { published: true, createdAt: { lt: createdAt }, ...typeFilter },
+        where: { published: true, slug: getPublicPostSlugFilter(), createdAt: { lt: createdAt }, ...typeFilter },
         orderBy: { createdAt: "desc" },
         select: { slug: true, title: true },
       });
@@ -74,7 +76,7 @@ export async function getPrevNextPosts(
       nextPost = seriesPosts[currentIndex + 1];
     } else {
       nextPost = await prisma.post.findFirst({
-        where: { published: true, createdAt: { gt: createdAt }, ...typeFilter },
+        where: { published: true, slug: getPublicPostSlugFilter(), createdAt: { gt: createdAt }, ...typeFilter },
         orderBy: { createdAt: "asc" },
         select: { slug: true, title: true },
       });
@@ -85,12 +87,12 @@ export async function getPrevNextPosts(
 
   const [prevPost, nextPost] = await Promise.all([
     prisma.post.findFirst({
-      where: { published: true, createdAt: { lt: createdAt }, ...typeFilter },
+      where: { published: true, slug: getPublicPostSlugFilter(), createdAt: { lt: createdAt }, ...typeFilter },
       orderBy: { createdAt: "desc" },
       select: { slug: true, title: true },
     }),
     prisma.post.findFirst({
-      where: { published: true, createdAt: { gt: createdAt }, ...typeFilter },
+      where: { published: true, slug: getPublicPostSlugFilter(), createdAt: { gt: createdAt }, ...typeFilter },
       orderBy: { createdAt: "asc" },
       select: { slug: true, title: true },
     }),
@@ -107,7 +109,7 @@ export async function getRelatedPosts(tags: string[], currentSlug: string, filte
   const postsData = await prisma.post.findMany({
     where: {
       published: true,
-      slug: { not: currentSlug },
+      slug: { ...getPublicPostSlugFilter(), not: currentSlug },
       tags: { some: { name: { in: tags } } },
       ...typeFilter,
     },
@@ -136,7 +138,7 @@ export async function getShortPostsNav(createdAt: Date, currentSlug: string, pos
       where: {
         published: true,
         type: "SHORT",
-        slug: { not: currentSlug },
+        slug: { ...getPublicPostSlugFilter(), not: currentSlug },
         createdAt: { lt: createdAt },
       },
       orderBy: { createdAt: "desc" },
@@ -146,7 +148,7 @@ export async function getShortPostsNav(createdAt: Date, currentSlug: string, pos
       where: {
         published: true,
         type: "SHORT",
-        slug: { not: currentSlug },
+        slug: { ...getPublicPostSlugFilter(), not: currentSlug },
         createdAt: { gt: createdAt },
       },
       orderBy: { createdAt: "asc" },

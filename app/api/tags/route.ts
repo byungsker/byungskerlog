@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { isPostIndexable } from "@/lib/content-policy";
 
 export async function GET() {
   try {
@@ -8,11 +10,11 @@ export async function GET() {
         id: true,
         name: true,
         slug: true,
-        _count: {
+        posts: {
+          where: { published: true, slug: getPublicPostSlugFilter() },
           select: {
-            posts: {
-              where: { published: true },
-            },
+            content: true,
+            type: true,
           },
         },
       },
@@ -23,14 +25,10 @@ export async function GET() {
       },
     });
 
-    const result = tags
-      .filter((t) => t._count.posts > 0)
-      .map((t) => ({
-        tag: t.name,
-        count: t._count.posts,
-        id: t.id,
-        slug: t.slug,
-      }));
+    const result = tags.flatMap((tag) => {
+      const count = tag.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
+      return count > 0 ? [{ tag: tag.name, count, id: tag.id, slug: tag.slug }] : [];
+    });
 
     return NextResponse.json(result);
   } catch (error) {

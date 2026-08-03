@@ -11,6 +11,7 @@ import { ReadingTracker } from "@/components/analytics/ReadingTracker";
 import { PostActions } from "./PostActions";
 import { ReadingProgress } from "./ReadingProgress";
 import { AdSense } from "@/components/seo/Adsense";
+import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Giscus } from "./Giscus";
 
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Zap } from "lucide-react";
@@ -24,17 +25,10 @@ import { PostCacheHydrator } from "./PostCacheHydrator";
 import type { Post, SeriesPost, RelatedPost, PrevNextPost } from "@/lib/post-data";
 import { extractMarkdownHeadings } from "@/lib/markdown-content";
 import { siteConfig } from "@/lib/site-config";
+import { getAdsensePlacementEligibility } from "@/lib/content-policy";
+import { normalizeAdsenseClientId, normalizeAdsenseSlot } from "@/lib/adsense";
 
 const siteUrl = siteConfig.url;
-
-const SHORT_AD_CONTENT_THRESHOLD = 300;
-
-function getPlainTextLength(content: string): number {
-  return content
-    .replace(/[#*`~>\[\]()!\-_]/g, "")
-    .replace(/\s+/g, " ")
-    .trim().length;
-}
 
 interface PostDetailProps {
   post: Post;
@@ -63,12 +57,25 @@ export function PostDetail({
   const basePath = isFromShort ? "/short" : "/posts";
   const backLink = isFromShort ? "/short-posts" : "/posts";
   const backLabel = isFromShort ? "Short" : "Post";
-  const adsEnabled = post.type !== "SHORT" || getPlainTextLength(post.content) >= SHORT_AD_CONTENT_THRESHOLD;
+  const adEligibility = getAdsensePlacementEligibility(post.type, post.content);
+  const adSenseClientId = normalizeAdsenseClientId(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
+  const adSlots = {
+    top: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP),
+    middle: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE),
+    bottom: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM),
+  };
+  const hasConfiguredEligibleSlot =
+    (adEligibility.top && adSlots.top) ||
+    (adEligibility.middle && adSlots.middle) ||
+    (adEligibility.bottom && adSlots.bottom);
   const hasMobileToc = post.type !== "SHORT" && extractMarkdownHeadings(post.content).length > 0;
 
   return (
     <div className="bg-background">
       <PostCacheHydrator post={post} />
+      {adEligibility.any && adSenseClientId && hasConfiguredEligibleSlot && (
+        <ConditionalAdsenseScript clientId={adSenseClientId} />
+      )}
       <ReadingProgress />
       {hasMobileToc && <MobileToc content={post.content} />}
       <StructuredData
@@ -88,9 +95,10 @@ export function PostDetail({
       <div className="post-detail-layout relative py-12">
         <div className="post-content-center flex justify-center px-4 sm:px-6 lg:px-8">
           <div className="post-main-content max-w-3xl w-full">
-            {adsEnabled && (
+            {adEligibility.top && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP || ""}
+                adClient={adSenseClientId}
+                adSlot={adSlots.top || ""}
                 adFormat="fluid"
                 adLayoutKey="-fb+5w+4e-db+86"
                 className="mb-8"
@@ -175,9 +183,10 @@ export function PostDetail({
               </PostImageGallery>
             </article>
 
-            {adsEnabled && (
+            {adEligibility.middle && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE || ""}
+                adClient={adSenseClientId}
+                adSlot={adSlots.middle || ""}
                 adFormat="fluid"
                 adLayoutKey="-fb+5w+4e-db+86"
                 className="my-8"
@@ -340,9 +349,10 @@ export function PostDetail({
 
             <Separator className="my-12" />
 
-            {adsEnabled && (
+            {adEligibility.bottom && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM || ""}
+                adClient={adSenseClientId}
+                adSlot={adSlots.bottom || ""}
                 adFormat="fluid"
                 adLayoutKey="-fb+5w+4e-db+86"
                 className="mt-12"

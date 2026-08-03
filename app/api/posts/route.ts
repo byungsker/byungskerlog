@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePostListCaches } from "@/lib/post-cache";
 import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   let slug = baseSlug;
@@ -192,6 +193,7 @@ export async function GET(request: NextRequest) {
 
     type WhereClause = {
       published?: boolean;
+      slug?: { notIn: string[] };
       tags?: { some: { name: string } };
       type?: "LONG" | "SHORT";
       createdAt?: {
@@ -210,6 +212,7 @@ export async function GET(request: NextRequest) {
 
     if (!includeUnpublished) {
       where.published = true;
+      where.slug = getPublicPostSlugFilter();
     }
 
     if (tag) {

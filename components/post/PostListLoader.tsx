@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 import { PostListClient } from "./PostListClient";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 const getPosts = unstable_cache(
   async () => {
     const postsRaw = await prisma.post.findMany({
-      where: { published: true },
+      where: { published: true, slug: getPublicPostSlugFilter() },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
