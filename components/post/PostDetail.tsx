@@ -99,8 +99,6 @@ export function PostDetail({
               <AdSense
                 adClient={adSenseClientId}
                 adSlot={adSlots.top || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
                 className="mb-8"
               />
             )}
@@ -187,8 +185,6 @@ export function PostDetail({
               <AdSense
                 adClient={adSenseClientId}
                 adSlot={adSlots.middle || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
                 className="my-8"
               />
             )}
@@ -353,8 +349,6 @@ export function PostDetail({
               <AdSense
                 adClient={adSenseClientId}
                 adSlot={adSlots.bottom || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
                 className="mt-12"
               />
             )}
