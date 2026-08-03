@@ -1,14 +1,8 @@
 import type { NextConfig } from "next";
-import { DUPLICATE_POST_REDIRECTS } from "./lib/public-post-policy";
 
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      ...Object.entries(DUPLICATE_POST_REDIRECTS).map(([sourceSlug, destinationSlug]) => ({
-        source: `/posts/${encodeURIComponent(sourceSlug)}`,
-        destination: `/posts/${destinationSlug}`,
-        permanent: true,
-      })),
       {
         source: "/:path*",
         has: [{ type: "host", value: "www.byungskerlog.com" }],
@@ -36,6 +30,6 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["@prisma/client", "prisma"],
-};
+}
 
 export default nextConfig;
