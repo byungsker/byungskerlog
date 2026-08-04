@@ -166,14 +166,18 @@ describe("PublishModal", () => {
 
     const tabList = screen.getByRole("tablist", { name: "Long Post 미리보기" });
     const settingsTab = screen.getByRole("tab", { name: "개요" });
+    const panel = screen.getByRole("tabpanel");
     expect(tabList).toContainElement(settingsTab);
     expect(settingsTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", settingsTab.id);
+    expect(settingsTab).toHaveAttribute("aria-controls", "long-post-panel");
+    expect(panel).toHaveAttribute("id", "long-post-panel");
+    expect(panel).toHaveAttribute("aria-labelledby", settingsTab.id);
 
     fireEvent.keyDown(settingsTab, { key: "ArrowRight" });
 
     const shortTab = screen.getByRole("tab", { name: "Short" });
     expect(shortTab).toHaveAttribute("aria-selected", "true");
+    expect(shortTab).toHaveAttribute("aria-controls", "long-post-panel");
     await waitFor(() => expect(shortTab).toHaveFocus());
     expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", shortTab.id);
   });
@@ -201,7 +205,13 @@ describe("PublishModal", () => {
     fireEvent.click(openButton);
 
     const dialog = await screen.findByRole("dialog", { name: "포스트 미리보기" });
+    const mobileContent = dialog.querySelector(".publish-modal-mobile-content");
+    const mobileFooter = dialog.querySelector("footer.publish-modal-mobile-footer");
+    expect(dialog).toHaveClass("publish-modal-mobile");
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(mobileContent?.tagName).toBe("DIV");
+    expect(mobileFooter).toHaveClass("sticky", "bottom-0", "shrink-0");
+    expect(mobileFooter).not.toHaveClass("fixed");
     expect(screen.getByRole("button", { name: "닫기" })).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
@@ -219,7 +229,7 @@ describe("PublishModal", () => {
     {
       field: "tag",
       apiMessage: "A tag with this identifier already exists",
-      expectedMessage: "A tag with this identifier already exists",
+      expectedMessage: "같은 태그가 이미 존재합니다. 태그를 확인해주세요.",
     },
   ])("중복 필드 $field 오류를 정확한 수정 메시지로 표시한다", async ({ field, apiMessage, expectedMessage }) => {
     vi.stubGlobal(

@@ -32,8 +32,12 @@ export async function buildPostTagsPayload(
     return options.reset ? { set: [] } : undefined;
   }
 
+  const uniqueTags = Array.from(
+    new Map(tags.map((tagName) => [tagName.toLowerCase().trim(), tagName.trim()])).values()
+  );
+
   const connectOrCreate = await Promise.all(
-    tags.map(async (tagName) => {
+    uniqueTags.map(async (tagName) => {
       const existing = await prisma.tag.findFirst({
         where: { name: { equals: tagName, mode: "insensitive" } },
       });

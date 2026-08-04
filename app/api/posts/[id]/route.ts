@@ -114,12 +114,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       threadsContent,
     } = body;
 
-    const publicUrlCandidates = [slug, subSlug]
+    const normalizedSlug = typeof slug === "string" ? slug.trim() : slug;
+    const normalizedSubSlug = typeof subSlug === "string" ? subSlug.trim() : subSlug;
+    const publicUrlCandidates = [normalizedSlug, normalizedSubSlug]
       .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
       .map((value) => value.trim());
 
     if (new Set(publicUrlCandidates).size !== publicUrlCandidates.length) {
-      return ApiError.duplicateEntry("post URL", { field: "url" }).toResponse();
+      throw ApiError.duplicateEntry("post URL", { field: "url" });
     }
 
     if (publicUrlCandidates.length > 0) {
@@ -132,7 +134,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       });
 
       if (urlConflict) {
-        return ApiError.duplicateEntry("post URL", { field: "url" }).toResponse();
+        throw ApiError.duplicateEntry("post URL", { field: "url" });
       }
     }
 
@@ -142,8 +144,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id },
       data: {
         ...(title !== undefined && { title }),
-        ...(slug !== undefined && { slug }),
-        ...(subSlug !== undefined && { subSlug: subSlug || null }),
+        ...(slug !== undefined && { slug: normalizedSlug }),
+        ...(subSlug !== undefined && { subSlug: normalizedSubSlug || null }),
         ...(excerpt !== undefined && { excerpt }),
         ...(content !== undefined && { content }),
         ...(tagsPayload !== undefined && { tags: tagsPayload }),

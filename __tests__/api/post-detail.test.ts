@@ -51,9 +51,9 @@ describe("PATCH /api/posts/[id]", () => {
     const response = await PATCH(
       createPatchRequest({
         title: "수정된 글",
-        slug: "vue-query-type-regression",
-        subSlug: null,
-        tags: ["tanstack"],
+        slug: "vue-query-type-regression ",
+        subSlug: "   ",
+        tags: ["TanStack", " tanstack "],
       }),
       routeParams
     );
@@ -78,9 +78,12 @@ describe("PATCH /api/posts/[id]", () => {
               },
             ],
           },
+          slug: "vue-query-type-regression",
+          subSlug: null,
         }),
       })
     );
+    expect(mockPrisma.tag.findFirst).toHaveBeenCalledTimes(1);
   });
 
   it("다른 포스트의 Sub Slug와 겹치는 Main Slug 변경을 차단한다", async () => {
@@ -105,7 +108,7 @@ describe("PATCH /api/posts/[id]", () => {
     expect(response.status).toBe(409);
     expect(data.code).toBe("DUPLICATE_ENTRY");
     expect(data.details).toEqual({ field: "tag" });
-    expect(data.error).not.toContain("post with this slug");
+    expect(data.error).toBe("A tag with this identifier already exists");
   });
 
   it.each([["linkedShortPostId"], ["futureUniqueField"]])(
@@ -119,7 +122,7 @@ describe("PATCH /api/posts/[id]", () => {
       expect(response.status).toBe(409);
       expect(data.code).toBe("DUPLICATE_ENTRY");
       expect(data.details).toEqual({ field: "unknown" });
-      expect(data.error).not.toContain("post URL");
+      expect(data.error).toBe("A entry with this identifier already exists");
     }
   );
 });
