@@ -5,6 +5,7 @@ import { revalidatePostListCaches } from "@/lib/post-cache";
 import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { buildPostTagsPayload } from "@/lib/server/post-tags";
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   let slug = baseSlug;
@@ -24,41 +25,6 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
     slug = `${baseSlug}-${counter}`;
     counter++;
   }
-}
-
-function generateTagSlug(tagName: string): string {
-  return (
-    tagName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || `tag-${Date.now()}`
-  );
-}
-
-async function buildTagsPayload(tags: string[]) {
-  if (!tags?.length) return undefined;
-
-  const tagOperations = await Promise.all(
-    tags.map(async (tagName: string) => {
-      // case-insensitive 검색으로 기존 태그 찾기
-      const existing = await prisma.tag.findFirst({
-        where: { name: { equals: tagName, mode: "insensitive" } },
-      });
-      if (existing) {
-        return { where: { id: existing.id }, create: { name: tagName, slug: generateTagSlug(tagName) } };
-      }
-      // 슬러그 충돌 방지: 슬러그가 이미 있으면 타임스탬프 붙이기
-      const baseSlug = generateTagSlug(tagName);
-      const slugExists = await prisma.tag.findUnique({ where: { slug: baseSlug } });
-      const finalSlug = slugExists ? `${baseSlug}-${Date.now()}` : baseSlug;
-      return { where: { name: tagName }, create: { name: tagName, slug: finalSlug } };
-    })
-  );
-
-  return { connectOrCreate: tagOperations };
 }
 
 export async function POST(request: NextRequest) {
@@ -96,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const slug = await generateUniqueSlug(requestedSlug);
-    const tagsPayload = await buildTagsPayload(tags);
+    const tagsPayload = await buildPostTagsPayload(tags);
 
     const post = await prisma.post.create({
       data: {

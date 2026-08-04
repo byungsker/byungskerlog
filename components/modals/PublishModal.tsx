@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, PanInfo } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils";
 
 type ShortTab = "settings" | "linkedin" | "threads";
 type LongTab = "settings" | "short" | "linkedin" | "threads";
+
+const SHORT_TABS: ShortTab[] = ["settings", "linkedin", "threads"];
+const LONG_TABS: LongTab[] = ["settings", "short", "linkedin", "threads"];
 
 const MAX_THUMBNAIL_SIZE = 500 * 1024;
 const DRAG_CLOSE_THRESHOLD = 100;
@@ -130,9 +133,9 @@ export function PublishModal({
 }: PublishModalProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dragY, setDragY] = useState(0);
   const [showSubSlugInput, setShowSubSlugInput] = useState(!!subSlug);
   const isMobile = useIsMobile();
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const [linkedinContent, setLinkedinContent] = useState("");
   const [threadsContent, setThreadsContent] = useState<string[]>([""]);
@@ -153,6 +156,20 @@ export function PublishModal({
 
   const { mutate: convertWithAI, isPending: isAILoading } = useSocialMediaConvert();
   const { data: presets } = useKnowledgePresets();
+
+  useEffect(() => {
+    if (!open) return;
+
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    return () => {
+      const returnTarget = returnFocusRef.current;
+      returnFocusRef.current = null;
+      requestAnimationFrame(() => {
+        if (returnTarget?.isConnected) returnTarget.focus();
+      });
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -218,12 +235,39 @@ export function PublishModal({
   const handlePostTypeChange = (type: "LONG" | "SHORT") => {
     onPostTypeChange(type);
     if (type === "SHORT") {
-      onThumbnailRemove();
       if (!linkedinContent && threadsContent.length === 1 && !threadsContent[0]) {
         initializeSnsContent();
       }
       setShortTab("settings");
     }
+  };
+
+  const handleTabKeyDown = <T extends string>(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    tabs: readonly T[],
+    activeTab: T,
+    setActiveTab: (tab: T) => void,
+    idPrefix: string
+  ) => {
+    const currentIndex = tabs.indexOf(activeTab);
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab);
+    requestAnimationFrame(() => document.getElementById(`${idPrefix}-tab-${nextTab}`)?.focus());
   };
 
   const handleAIImprove = (platform: "linkedin" | "threads") => {
@@ -353,7 +397,7 @@ export function PublishModal({
     try {
       let finalThumbnailUrl = thumbnailUrl;
 
-      if (thumbnailFile) {
+      if (postType === "LONG" && thumbnailFile) {
         finalThumbnailUrl = await uploadThumbnail(thumbnailFile);
       }
 
@@ -364,7 +408,7 @@ export function PublishModal({
         tags,
         type: postType,
         published: true,
-        thumbnail: finalThumbnailUrl,
+        thumbnail: postType === "LONG" ? finalThumbnailUrl : null,
         seriesId,
         ...(postType === "SHORT" && {
           linkedinContent: linkedinContent || null,
@@ -404,6 +448,16 @@ export function PublishModal({
 
       if (!response.ok) {
         const data = await response.json();
+        if (data.code === "DUPLICATE_ENTRY" && data.details?.field === "url") {
+          if (!isEditMode) {
+            setShowSlugInputForNewPost(true);
+            if (!newPostSlug) {
+              setNewPostSlug(generateSlug(title));
+            }
+          }
+          setError("이 URL은 이미 사용 중입니다. 아래에서 URL을 수정해주세요.");
+          return;
+        }
         throw new Error(data.error || "발행에 실패했습니다.");
       }
 
@@ -462,13 +516,6 @@ export function PublishModal({
     if (!isPublishing && info.offset.y > DRAG_CLOSE_THRESHOLD) {
       onOpenChange(false);
     }
-    setDragY(0);
-  };
-
-  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (info.offset.y > 0) {
-      setDragY(info.offset.y);
-    }
   };
 
   const LinkedInIcon = ({ className }: { className?: string }) => (
@@ -484,7 +531,7 @@ export function PublishModal({
   );
 
   const settingsContent = (
-    <div className="settings-content space-y-6">
+    <div className="settings-content min-w-0 space-y-6">
       <div className="excerpt-field space-y-2">
         <Label className="text-sm font-medium">설명</Label>
         <Textarea
@@ -504,7 +551,7 @@ export function PublishModal({
         <div className="slug-edit-section space-y-4 border-t pt-4">
           <div className="main-slug-field space-y-2">
             <Label className="text-sm font-medium">{isEditMode ? "Main Slug" : "URL"}</Label>
-            <div className="text-xs text-muted-foreground mb-1">
+            <div className="mb-1 min-w-0 break-all text-xs text-muted-foreground">
               /posts/
               <span className="text-foreground font-medium">
                 {isEditMode ? slug || "your-slug" : newPostSlug || "your-slug"}
@@ -532,7 +579,7 @@ export function PublishModal({
                 <Label className="text-sm font-medium">
                   Sub Slug <span className="text-muted-foreground font-normal">(선택)</span>
                 </Label>
-                <div className="text-xs text-muted-foreground mb-1">
+                <div className="mb-1 min-w-0 break-all text-xs text-muted-foreground">
                   /posts/<span className="text-foreground font-medium">{subSlug || "sub-slug"}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -589,7 +636,7 @@ export function PublishModal({
   );
 
   const linkedinTabContent = (
-    <div className="linkedin-tab-content space-y-4 relative">
+    <div className="linkedin-tab-content relative min-w-0 space-y-4">
       {aiLoadingOverlay}
       <div className="flex items-center justify-end flex-wrap gap-2">
         <AIButtonWithPreset
@@ -628,7 +675,7 @@ export function PublishModal({
           onChange={(e) => setLinkedinContent(e.target.value)}
           placeholder="LinkedIn 콘텐츠..."
           className={cn(
-            "resize-none transition-all duration-200 pr-10",
+            "min-w-0 w-full resize-none whitespace-pre-wrap pr-10 [overflow-wrap:anywhere] transition-all duration-200",
             expandedLinkedin ? "h-[calc(100dvh-350px)]" : isFullView ? "h-[calc(100dvh-380px)]" : "h-[320px]"
           )}
           disabled={isPublishing || isAILoading}
@@ -656,7 +703,7 @@ export function PublishModal({
   );
 
   const threadsTabContent = (
-    <div className="threads-tab-content space-y-4 relative">
+    <div className="threads-tab-content relative min-w-0 space-y-4">
       {aiLoadingOverlay}
       <div className="flex items-center justify-end flex-wrap gap-2">
         <span className="text-sm text-muted-foreground mr-auto">{threadsContent.length}개 포스트</span>
@@ -720,7 +767,7 @@ export function PublishModal({
                 onChange={(e) => handleThreadsContentChange(index, e.target.value)}
                 placeholder={`Threads 포스트 ${index + 1}...`}
                 className={cn(
-                  "resize-none pr-10 transition-all duration-200",
+                  "min-w-0 w-full resize-none whitespace-pre-wrap pr-10 [overflow-wrap:anywhere] transition-all duration-200",
                   expandedThreadsIndex === index ? "h-[300px]" : "h-[120px]"
                 )}
                 disabled={isPublishing || isAILoading}
@@ -762,50 +809,83 @@ export function PublishModal({
   );
 
   const shortPostTabs = (
-    <div className="short-post-tabs space-y-4">
-      <div className="tabs-header flex border-b">
-        <button
-          type="button"
-          onClick={() => setShortTab("settings")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            shortTab === "settings"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
+    <div className="short-post-tabs flex min-h-0 min-w-0 w-full flex-col gap-4">
+      <div className="tabs-navigation min-w-0 w-full shrink-0 space-y-1 overflow-hidden">
+        <div
+          className="tabs-header flex min-w-0 w-full overflow-x-auto border-b"
+          role="tablist"
+          aria-label="Short Post 미리보기"
         >
-          <Info className="h-4 w-4" />
-          개요
-        </button>
-        <button
-          type="button"
-          onClick={() => setShortTab("linkedin")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            shortTab === "linkedin"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <LinkedInIcon />
-          LinkedIn
-        </button>
-        <button
-          type="button"
-          onClick={() => setShortTab("threads")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            shortTab === "threads"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <ThreadsIcon />
-          Threads
-        </button>
+          <button
+            id="short-post-tab-settings"
+            type="button"
+            role="tab"
+            aria-selected={shortTab === "settings"}
+            aria-controls="short-post-panel-settings"
+            tabIndex={shortTab === "settings" ? 0 : -1}
+            onClick={() => setShortTab("settings")}
+            onKeyDown={(event) => handleTabKeyDown(event, SHORT_TABS, shortTab, setShortTab, "short-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              shortTab === "settings"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Info className="h-4 w-4" />
+            개요
+          </button>
+          <button
+            id="short-post-tab-linkedin"
+            type="button"
+            role="tab"
+            aria-selected={shortTab === "linkedin"}
+            aria-controls="short-post-panel-linkedin"
+            tabIndex={shortTab === "linkedin" ? 0 : -1}
+            onClick={() => setShortTab("linkedin")}
+            onKeyDown={(event) => handleTabKeyDown(event, SHORT_TABS, shortTab, setShortTab, "short-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              shortTab === "linkedin"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <LinkedInIcon />
+            LinkedIn
+          </button>
+          <button
+            id="short-post-tab-threads"
+            type="button"
+            role="tab"
+            aria-selected={shortTab === "threads"}
+            aria-controls="short-post-panel-threads"
+            tabIndex={shortTab === "threads" ? 0 : -1}
+            onClick={() => setShortTab("threads")}
+            onKeyDown={(event) => handleTabKeyDown(event, SHORT_TABS, shortTab, setShortTab, "short-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              shortTab === "threads"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ThreadsIcon />
+            Threads
+          </button>
+        </div>
+        <p className="px-1 text-right text-[11px] text-muted-foreground sm:hidden" aria-hidden="true">
+          옆으로 밀어 다른 탭 보기 →
+        </p>
       </div>
 
-      <div className="tab-content h-[420px]">
+      <div
+        id={`short-post-panel-${shortTab}`}
+        className="tab-content min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-1"
+        role="tabpanel"
+        aria-labelledby={`short-post-tab-${shortTab}`}
+        tabIndex={0}
+      >
         {shortTab === "settings" && settingsContent}
         {shortTab === "linkedin" && linkedinTabContent}
         {shortTab === "threads" && threadsTabContent}
@@ -814,8 +894,8 @@ export function PublishModal({
   );
 
   const longPostSettingsContent = (
-    <div className="publish-modal-grid grid gap-6 sm:grid-cols-2 h-[420px]">
-      <div className="thumbnail-section">
+    <div className="publish-modal-grid grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="thumbnail-section min-w-0">
         <ThumbnailUploader
           previewUrl={thumbnailUrl}
           onFileChange={onThumbnailFileChange}
@@ -874,7 +954,10 @@ export function PublishModal({
               value={shortPostContent}
               onChange={(e) => setShortPostContent(e.target.value)}
               placeholder="Short Post 본문을 입력하세요..."
-              className={cn("resize-none", isFullView ? "h-[calc(100dvh-480px)]" : "h-[240px]")}
+              className={cn(
+                "min-w-0 w-full resize-none whitespace-pre-wrap [overflow-wrap:anywhere]",
+                isFullView ? "h-[calc(100dvh-480px)]" : "h-[240px]"
+              )}
               disabled={isPublishing || !createShortPost}
             />
           </div>
@@ -912,63 +995,102 @@ export function PublishModal({
   );
 
   const longPostContent = (
-    <div className="long-post-tabs space-y-4">
-      <div className="tabs-header flex border-b">
-        <button
-          type="button"
-          onClick={() => setLongTab("settings")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            longTab === "settings"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
+    <div className="long-post-tabs flex min-h-0 min-w-0 w-full flex-col gap-4">
+      <div className="tabs-navigation min-w-0 w-full shrink-0 space-y-1 overflow-hidden">
+        <div
+          className="tabs-header flex min-w-0 w-full overflow-x-auto border-b"
+          role="tablist"
+          aria-label="Long Post 미리보기"
         >
-          <Info className="h-4 w-4" />
-          개요
-        </button>
-        <button
-          type="button"
-          onClick={() => setLongTab("short")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            longTab === "short"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FileTextIcon />
-          Short
-        </button>
-        <button
-          type="button"
-          onClick={() => setLongTab("linkedin")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            longTab === "linkedin"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <LinkedInIcon />
-          LinkedIn
-        </button>
-        <button
-          type="button"
-          onClick={() => setLongTab("threads")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-            longTab === "threads"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <ThreadsIcon />
-          Threads
-        </button>
+          <button
+            id="long-post-tab-settings"
+            type="button"
+            role="tab"
+            aria-selected={longTab === "settings"}
+            aria-controls="long-post-panel-settings"
+            tabIndex={longTab === "settings" ? 0 : -1}
+            onClick={() => setLongTab("settings")}
+            onKeyDown={(event) => handleTabKeyDown(event, LONG_TABS, longTab, setLongTab, "long-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              longTab === "settings"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Info className="h-4 w-4" />
+            개요
+          </button>
+          <button
+            id="long-post-tab-short"
+            type="button"
+            role="tab"
+            aria-selected={longTab === "short"}
+            aria-controls="long-post-panel-short"
+            tabIndex={longTab === "short" ? 0 : -1}
+            onClick={() => setLongTab("short")}
+            onKeyDown={(event) => handleTabKeyDown(event, LONG_TABS, longTab, setLongTab, "long-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              longTab === "short"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileTextIcon />
+            Short
+          </button>
+          <button
+            id="long-post-tab-linkedin"
+            type="button"
+            role="tab"
+            aria-selected={longTab === "linkedin"}
+            aria-controls="long-post-panel-linkedin"
+            tabIndex={longTab === "linkedin" ? 0 : -1}
+            onClick={() => setLongTab("linkedin")}
+            onKeyDown={(event) => handleTabKeyDown(event, LONG_TABS, longTab, setLongTab, "long-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              longTab === "linkedin"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <LinkedInIcon />
+            LinkedIn
+          </button>
+          <button
+            id="long-post-tab-threads"
+            type="button"
+            role="tab"
+            aria-selected={longTab === "threads"}
+            aria-controls="long-post-panel-threads"
+            tabIndex={longTab === "threads" ? 0 : -1}
+            onClick={() => setLongTab("threads")}
+            onKeyDown={(event) => handleTabKeyDown(event, LONG_TABS, longTab, setLongTab, "long-post")}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              longTab === "threads"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ThreadsIcon />
+            Threads
+          </button>
+        </div>
+        <p className="px-1 text-right text-[11px] text-muted-foreground sm:hidden" aria-hidden="true">
+          옆으로 밀어 다른 탭 보기 →
+        </p>
       </div>
 
-      <div className="tab-content h-[420px]">
+      <div
+        id={`long-post-panel-${longTab}`}
+        className="tab-content min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-1"
+        role="tabpanel"
+        aria-labelledby={`long-post-tab-${longTab}`}
+        tabIndex={0}
+      >
         {longTab === "settings" && longPostSettingsContent}
         {longTab === "short" && shortTabContent}
         {longTab === "linkedin" && linkedinTabContent}
@@ -1021,111 +1143,104 @@ export function PublishModal({
 
   if (isMobile || isFullView) {
     return (
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              className="publish-modal-overlay fixed inset-0 z-50 bg-black/50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 - dragY / 300 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => !isPublishing && !isFullView && onOpenChange(false)}
-            />
-            <motion.div
-              className="publish-modal-mobile fixed inset-0 z-50 flex flex-col bg-background"
-              style={{ height: "100dvh", width: "100dvw" }}
-              initial={{ y: isMobile ? "100%" : 0, opacity: isMobile ? 1 : 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: isMobile ? "100%" : 0, opacity: isMobile ? 1 : 0 }}
-              transition={{
-                type: "spring",
-                damping: 30,
-                stiffness: 300,
-              }}
-              drag={isMobile && !isFullView ? "y" : false}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.5 }}
-              onDrag={handleDrag}
-              onDragEnd={handleDragEnd}
-            >
-              <header className={cn("publish-modal-mobile-header border-b ", isFullView ? "py-6 px-4" : "px-4 py-4")}>
-                {isMobile && !isFullView ? (
-                  <div className="flex items-center justify-between">
-                    <div className="w-10" />
-                    <div className="publish-modal-drag-handle mx-auto">
-                      <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                    </div>
-                    <button
+      <Dialog open={open} onOpenChange={(nextOpen) => !isPublishing && onOpenChange(nextOpen)}>
+        <DialogContent
+          className="publish-modal-mobile top-0 left-0 flex h-[100dvh] w-[100dvw] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0"
+          showCloseButton={false}
+          aria-modal="true"
+          aria-describedby={undefined}
+          onEscapeKeyDown={(event) => isPublishing && event.preventDefault()}
+        >
+          <motion.div
+            className="flex h-full min-h-0 w-full flex-col bg-background"
+            initial={{ y: isMobile ? "100%" : 0, opacity: isMobile ? 1 : 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 300,
+            }}
+            drag={isMobile && !isFullView ? "y" : false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={handleDragEnd}
+          >
+            <header className={cn("publish-modal-mobile-header border-b ", isFullView ? "py-6 px-4" : "px-4 py-4")}>
+              {isMobile && !isFullView ? (
+                <div className="flex items-center justify-between">
+                  <div className="w-10" />
+                  <div className="publish-modal-drag-handle mx-auto">
+                    <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="닫기"
+                    onClick={() => onOpenChange(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={isPublishing}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between max-w-3xl mx-auto">
+                  <DialogTitle className="text-lg font-semibold">포스트 미리보기</DialogTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsFullView(false)}
+                      className="gap-1.5 h-8"
+                    >
+                      <Minimize2 className="h-4 w-4" />
+                      축소
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onOpenChange(false)}
-                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                      className="gap-1.5 h-8"
                       disabled={isPublishing}
                     >
-                      <X className="h-5 w-5" />
-                    </button>
+                      <X className="h-4 w-4" />
+                      닫기
+                    </Button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between max-w-3xl mx-auto">
-                    <h2 className="text-lg font-semibold">포스트 미리보기</h2>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsFullView(false)}
-                        className="gap-1.5 h-8"
-                      >
-                        <Minimize2 className="h-4 w-4" />
-                        축소
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onOpenChange(false)}
-                        className="gap-1.5 h-8"
-                        disabled={isPublishing}
-                      >
-                        <X className="h-4 w-4" />
-                        닫기
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </header>
-
-              {isMobile && !isFullView && (
-                <div className="publish-modal-mobile-title px-4 pt-4 pb-2">
-                  <h2 className="text-lg font-semibold">포스트 미리보기</h2>
                 </div>
               )}
+            </header>
 
-              <main
-                className={cn(
-                  "publish-modal-mobile-content flex-1 px-4 pb-24",
-                  isFullView ? "overflow-hidden" : "overflow-y-auto"
-                )}
-              >
-                <div className="space-y-6 py-4 max-w-3xl mx-auto">{modalContent}</div>
-              </main>
+            {isMobile && !isFullView && (
+              <div className="publish-modal-mobile-title px-4 pt-4 pb-2">
+                <DialogTitle className="text-lg font-semibold">포스트 미리보기</DialogTitle>
+              </div>
+            )}
 
-              <footer className="publish-modal-mobile-footer fixed bottom-0 left-0 right-0  bg-background border-t safe-area-bottom p-4 pb-6">
-                <div className={cn("flex gap-2", isFullView && "max-w-3xl mx-auto justify-end w-full")}>
-                  {footerButtons}
-                </div>
-              </footer>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            <main className="publish-modal-mobile-content min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24">
+              <div className="mx-auto flex min-h-full min-w-0 w-full max-w-3xl flex-col gap-6 py-4">{modalContent}</div>
+            </main>
+
+            <footer className="publish-modal-mobile-footer safe-area-bottom fixed right-0 bottom-0 left-0 z-10 border-t bg-background p-4 pb-6">
+              <div className={cn("flex gap-2", isFullView && "max-w-3xl mx-auto justify-end w-full")}>
+                {footerButtons}
+              </div>
+            </footer>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
     <Dialog open={open} onOpenChange={(open) => !isPublishing && onOpenChange(open)}>
-      <DialogContent className="publish-modal sm:max-w-[800px]" showCloseButton={false}>
-        <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogContent
+        className="publish-modal flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-[800px]"
+        showCloseButton={false}
+        aria-describedby={undefined}
+      >
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between">
           <DialogTitle>포스트 미리보기</DialogTitle>
           <div className="flex items-center gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsFullView(true)} className="gap-1.5 h-8">
@@ -1146,9 +1261,11 @@ export function PublishModal({
           </div>
         </DialogHeader>
 
-        <div className="publish-modal-content grid gap-6 py-4">{modalContent}</div>
+        <div className="publish-modal-content grid min-h-0 min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-6 overflow-hidden py-4">
+          {modalContent}
+        </div>
 
-        <DialogFooter className="gap-1">{footerButtons}</DialogFooter>
+        <DialogFooter className="shrink-0 gap-1">{footerButtons}</DialogFooter>
       </DialogContent>
     </Dialog>
   );

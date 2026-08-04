@@ -84,12 +84,20 @@ export function ThumbnailUploader({ previewUrl, onFileChange, onRemove, disabled
 
       {previewUrl ? (
         <div className="thumbnail-preview relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-          <Image src={previewUrl} alt="썸네일 미리보기" fill className="object-cover" unoptimized={isBlobUrl} />
+          <Image
+            src={previewUrl}
+            alt="썸네일 미리보기"
+            fill
+            sizes="(min-width: 640px) 400px, 100vw"
+            className="object-cover"
+            unoptimized={isBlobUrl}
+          />
           <Button
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute top-2 right-2 h-8 w-8"
+            aria-label="썸네일 삭제"
+            className="absolute top-2 right-2 h-8 w-8 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={handleRemove}
             disabled={disabled}
           >
@@ -107,13 +115,7 @@ export function ThumbnailUploader({ previewUrl, onFileChange, onRemove, disabled
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleInputChange}
-            disabled={disabled}
-          />
+          <input type="file" accept="image/*" className="hidden" onChange={handleInputChange} disabled={disabled} />
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <ImageIcon className="h-8 w-8" />
             <span className="text-sm">이미지를 드래그하거나 클릭하여 업로드</span>
