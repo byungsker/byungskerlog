@@ -52,18 +52,16 @@ export class ApiError extends Error {
     return new ApiError(ErrorCode.NOT_FOUND, 404, `${resource} not found`);
   }
 
-  static validationError(
-    message = "Validation failed",
-    details?: Record<string, unknown>
-  ): ApiError {
+  static validationError(message = "Validation failed", details?: Record<string, unknown>): ApiError {
     return new ApiError(ErrorCode.VALIDATION_ERROR, 400, message, details);
   }
 
-  static duplicateEntry(resource = "Entry"): ApiError {
+  static duplicateEntry(resource = "Entry", details?: Record<string, unknown>): ApiError {
     return new ApiError(
       ErrorCode.DUPLICATE_ENTRY,
       409,
-      `A ${resource.toLowerCase()} with this identifier already exists`
+      `A ${resource.toLowerCase()} with this identifier already exists`,
+      details
     );
   }
 
