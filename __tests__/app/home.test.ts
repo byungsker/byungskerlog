@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import { createElement } from "react";
 
 const adSenseMock = vi.hoisted(() => vi.fn(() => null));
 
 vi.mock("@/components/post/PostListLoader", () => ({
   PostListLoader: () => null,
+}));
+vi.mock("@/components/post/PopularPostsLoader", () => ({
+  PopularPostsLoader: () => createElement("div", { "data-testid": "popular-posts-loader-sentinel" }),
 }));
 vi.mock("@/components/skeleton/PostListSkeleton", () => ({
   PostListSkeleton: () => null,
@@ -27,5 +31,6 @@ describe("홈 페이지 렌더링 모드", () => {
     render(Home());
 
     expect(adSenseMock).not.toHaveBeenCalled();
+    expect(screen.getByTestId("popular-posts-loader-sentinel")).toBeInTheDocument();
   });
 });

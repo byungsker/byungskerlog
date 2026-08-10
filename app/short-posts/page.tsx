@@ -51,6 +51,9 @@ export default async function ShortPostsPage({ searchParams }: ShortPostsPagePro
             <ShortPostsPageLoader page={page} countOnly />
           </Suspense>
         </div>
+        <p className="short-posts-import-note mb-8 text-sm text-muted-foreground">
+          LinkedIn 글은 계정 소유자가 확인한 원문 또는 승인된 내보내기 데이터에서 가져옵니다.
+        </p>
         <Suspense fallback={<ShortPostsSkeleton />}>
           <ShortPostsPageLoader page={page} />
         </Suspense>
