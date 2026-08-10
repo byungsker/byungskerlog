@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -27,6 +28,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         userAgent,
       },
     });
+
+    try {
+      revalidatePostListCaches();
+    } catch (error) {
+      console.error("Failed to invalidate post list caches after recording view:", error);
+    }
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

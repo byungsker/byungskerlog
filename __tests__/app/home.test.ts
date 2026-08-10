@@ -6,6 +6,9 @@ const adSenseMock = vi.hoisted(() => vi.fn(() => null));
 vi.mock("@/components/post/PostListLoader", () => ({
   PostListLoader: () => null,
 }));
+vi.mock("@/components/post/PopularPostsLoader", () => ({
+  PopularPostsLoader: () => null,
+}));
 vi.mock("@/components/skeleton/PostListSkeleton", () => ({
   PostListSkeleton: () => null,
 }));
