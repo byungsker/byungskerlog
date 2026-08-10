@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
+
+const mockPrisma = vi.hoisted(() => ({
+  post: { findUnique: vi.fn() },
+  postView: { create: vi.fn() },
+}));
 
 const { mockRevalidatePostListCaches } = vi.hoisted(() => ({
   mockRevalidatePostListCaches: vi.fn(),
@@ -15,7 +19,8 @@ const params = { params: Promise.resolve({ slug: "popular-post" }) };
 
 describe("POST /api/posts-by-slug/[slug]/views", () => {
   beforeEach(() => {
-    resetPrismaMocks();
+    mockPrisma.post.findUnique.mockReset();
+    mockPrisma.postView.create.mockReset();
     mockRevalidatePostListCaches.mockReset();
   });
 

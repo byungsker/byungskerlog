@@ -7,7 +7,7 @@ import {
   resolveLinkedInImportEnv,
 } from "@/lib/server/linkedin-import-environment";
 
-describe("normalizeLinkedInShortImport", () => {
+describe("LinkedIn SHORT 가져오기 정규화", () => {
   it("소유자 제공 레코드를 최신순으로 정규화하고 불완전한 레코드는 제외한다", () => {
     const records = normalizeLinkedInShortImport([
       { title: "이전 글", content: "내용", publishedAt: "2026-01-01T00:00:00.000Z" },
@@ -93,22 +93,22 @@ describe("normalizeLinkedInShortImport", () => {
   });
 });
 
-describe("LINKEDIN_SHORT_IMPORT_CONTRACT", () => {
+describe("LinkedIn SHORT 가져오기 계약", () => {
   it("공개 프로필 크롤링 대신 승인된 내보내기 경계를 명시한다", () => {
     expect(LINKEDIN_SHORT_IMPORT_CONTRACT.source).toContain("account-owner export");
     expect(LINKEDIN_SHORT_IMPORT_CONTRACT.prohibited).toContain("unauthorized public-profile crawling");
   });
 });
 
-describe("LinkedIn import executable boundary", () => {
+describe("LinkedIn SHORT 실행 경계", () => {
   it("개발 환경 파일과 개발 Neon 브랜치만 허용한다", () => {
     expect(resolveLinkedInImportEnv()).toContain(LINKEDIN_IMPORT_ENV_FILE);
     expect(() => resolveLinkedInImportEnv(".env")).toThrow("development-only");
-    expect(() => assertDevelopmentDatabaseUrl("postgresql://ep-old-poetry-a16nvu2i.neon.tech/neondb")).toThrow(
-      DEVELOPMENT_DATABASE_HOST
-    );
     expect(() =>
-      assertDevelopmentDatabaseUrl("postgresql://ep-wandering-tree-a11ymokd.neon.tech/neondb")
-    ).not.toThrow();
+      assertDevelopmentDatabaseUrl(
+        "postgresql://ep-old-poetry-a16nvu2i.neon.tech/neondb?branch=ep-wandering-tree-a11ymokd"
+      )
+    ).toThrow(DEVELOPMENT_DATABASE_HOST);
+    expect(() => assertDevelopmentDatabaseUrl(`postgresql://${DEVELOPMENT_DATABASE_HOST}/neondb`)).not.toThrow();
   });
 });

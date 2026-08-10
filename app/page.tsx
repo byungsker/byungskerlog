@@ -28,7 +28,14 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-5xl mx-auto">
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <div
+              aria-hidden="true"
+              className="popular-posts-skeleton mb-10 min-h-40 rounded-xl border border-border/60 bg-muted/20 sm:mb-12"
+            />
+          }
+        >
           <PopularPostsLoader />
         </Suspense>
 

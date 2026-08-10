@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { mockPrisma, resetPrismaMocks } from "../../mocks/prisma";
+import { format } from "date-fns";
+import { createCalendarDate } from "@/lib/home-popular-posts";
+import { PopularPostsLoader } from "@/components/post/PopularPostsLoader";
+
+const mockPrisma = vi.hoisted(() => ({
+  post: { findMany: vi.fn() },
+}));
 
 interface RenderedPopularPost {
   title: string;
@@ -21,12 +27,18 @@ vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
 vi.mock("next/cache", () => ({ unstable_cache: (callback: () => unknown) => callback }));
 vi.mock("@/components/post/PopularPosts", () => ({ PopularPosts: popularPostsMock }));
 
-import { PopularPostsLoader } from "@/components/post/PopularPostsLoader";
-
 describe("PopularPostsLoader", () => {
   beforeEach(() => {
-    resetPrismaMocks();
+    mockPrisma.post.findMany.mockReset();
     popularPostsMock.mockClear();
+  });
+
+  it("비 UTC 환경에서도 기준선의 편집 날짜를 유지한다", () => {
+    vi.stubEnv("TZ", "America/Los_Angeles");
+
+    expect(format(createCalendarDate("2024-11-10"), "yyyy.MM.dd")).toBe("2024.11.10");
+
+    vi.unstubAllEnvs();
   });
 
   it("고정한 네 글의 순서를 유지하고 일치하는 DB 행의 조회수만 보강한다", async () => {
@@ -52,7 +64,7 @@ describe("PopularPostsLoader", () => {
     expect(posts[1]).toMatchObject({ viewCount: 42, isBaseline: false });
     expect(posts[1].href).toBe("/posts/teoconf2024-스피커-후기-bloj8ivk");
     expect(posts[0]).toMatchObject({ viewCount: 0, isBaseline: true });
-    expect(posts.map((post) => post.createdAt.toISOString().slice(0, 10))).toEqual([
+    expect(posts.map((post) => format(post.createdAt, "yyyy-MM-dd"))).toEqual([
       "2024-11-10",
       "2025-02-10",
       "2025-03-16",

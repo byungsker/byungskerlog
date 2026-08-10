@@ -5,6 +5,11 @@ export interface HistoricalPopularPostSeed {
   legacyUrl: string;
 }
 
+export function createCalendarDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 /**
  * Editorially selected historical posts. Keep this order stable: live metrics
  * enrich these records but never choose or reorder homepage entries.

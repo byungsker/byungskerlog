@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { HISTORICAL_POPULAR_POSTS } from "@/lib/home-popular-posts";
+import { createCalendarDate, HISTORICAL_POPULAR_POSTS } from "@/lib/home-popular-posts";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { PopularPosts } from "./PopularPosts";
 
@@ -30,7 +30,7 @@ const getPopularPosts = unstable_cache(
         id: seed.slug,
         href: post ? `/posts/${post.slug}` : seed.legacyUrl,
         title: seed.title,
-        createdAt: new Date(`${seed.publishedAt}T00:00:00.000Z`),
+        createdAt: createCalendarDate(seed.publishedAt),
         viewCount: post?._count.views ?? 0,
         isBaseline: !post,
       };
