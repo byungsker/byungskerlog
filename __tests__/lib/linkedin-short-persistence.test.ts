@@ -53,4 +53,23 @@ describe("LinkedIn SHORT 영속화", () => {
     });
     expect(summary).toEqual({ imported: 1, skipped: 0, created: 1, updated: 0 });
   });
+
+  it("생성 직전 slug 충돌이 발생해도 다음 slug로 재시도한다", async () => {
+    const prisma = createPrismaMock();
+    vi.mocked(prisma.post.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.post.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.post.create)
+      .mockRejectedValueOnce({ code: "P2002", meta: { target: ["slug"] } } as never)
+      .mockResolvedValueOnce({} as never);
+
+    const summary = await importLinkedInShorts(
+      [createRecord("https://www.linkedin.com/posts/race", "경쟁 글")],
+      prisma
+    );
+
+    expect(prisma.post.create).toHaveBeenNthCalledWith(2, {
+      data: expect.objectContaining({ slug: "경쟁-글-2" }),
+    });
+    expect(summary).toEqual({ imported: 1, skipped: 0, created: 1, updated: 0 });
+  });
 });

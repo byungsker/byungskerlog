@@ -1,8 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
 import type { NormalizedLinkedInShortImportRecord } from "@/lib/linkedin-short-import";
+import type { prisma } from "@/lib/prisma";
 import { generateSlug } from "@/lib/utils/slug";
 
-export type LinkedInImportPrisma = Pick<PrismaClient, "post">;
+export type LinkedInImportPrisma = Pick<typeof prisma, "post">;
 
 export interface LinkedInShortImportSummary {
   imported: number;
@@ -11,15 +11,27 @@ export interface LinkedInShortImportSummary {
   updated: number;
 }
 
-async function generateAvailableSlug(prisma: LinkedInImportPrisma, title: string, sourceUrl: string) {
+function isSlugUniqueConstraintError(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error) || error.code !== "P2002") {
+    return false;
+  }
+
+  if (!("meta" in error) || typeof error.meta !== "object" || error.meta === null || !("target" in error.meta)) {
+    return false;
+  }
+
+  const target = error.meta.target;
+  return Array.isArray(target) ? target.includes("slug") : typeof target === "string" && target.includes("slug");
+}
+
+async function generateAvailableSlug(prisma: LinkedInImportPrisma, title: string, sourceUrl: string, startCounter = 1) {
   const baseSlug = generateSlug(title) || `linkedin-${sourceUrl.split(":").pop()}`;
-  let slug = baseSlug;
-  let counter = 2;
+  let counter = startCounter;
 
   while (true) {
+    const slug = counter === 1 ? baseSlug : `${baseSlug}-${counter}`;
     const existing = await prisma.post.findUnique({ where: { slug }, select: { id: true } });
-    if (!existing) return slug;
-    slug = `${baseSlug}-${counter}`;
+    if (!existing) return { nextCounter: counter + 1, slug };
     counter += 1;
   }
 }
@@ -56,9 +68,21 @@ export async function importLinkedInShorts(
       continue;
     }
 
-    const slug = await generateAvailableSlug(prisma, record.title, record.url);
-    await prisma.post.create({ data: { ...data, slug } });
-    created += 1;
+    let { nextCounter, slug } = await generateAvailableSlug(prisma, record.title, record.url);
+
+    while (true) {
+      try {
+        await prisma.post.create({ data: { ...data, slug } });
+        created += 1;
+        break;
+      } catch (error) {
+        if (!isSlugUniqueConstraintError(error)) {
+          throw error;
+        }
+
+        ({ nextCounter, slug } = await generateAvailableSlug(prisma, record.title, record.url, nextCounter));
+      }
+    }
   }
 
   return {

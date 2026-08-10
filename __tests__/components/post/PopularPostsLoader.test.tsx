@@ -41,6 +41,11 @@ describe("PopularPostsLoader", () => {
     vi.unstubAllEnvs();
   });
 
+  it("잘못된 편집 날짜를 거부한다", () => {
+    expect(() => createCalendarDate("2024-02-30")).toThrow("Invalid calendar date");
+    expect(() => createCalendarDate("2024-2-3")).toThrow("Expected date in YYYY-MM-DD format");
+  });
+
   it("고정한 네 글의 순서를 유지하고 일치하는 DB 행의 조회수만 보강한다", async () => {
     mockPrisma.post.findMany.mockResolvedValue([
       {
