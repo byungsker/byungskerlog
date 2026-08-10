@@ -46,11 +46,19 @@ describe("PopularPostsLoader", () => {
     expect(() => createCalendarDate("2024-2-3")).toThrow("Expected date in YYYY-MM-DD format");
   });
 
-  it("고정한 네 글의 순서를 유지하고 일치하는 DB 행의 조회수만 보강한다", async () => {
+  it("고정한 네 글을 실제 조회수 내림차순으로 정렬하고 동률은 기존 순서를 유지한다", async () => {
     mockPrisma.post.findMany.mockResolvedValue([
       {
         slug: "teoconf2024-스피커-후기-bloj8ivk",
         _count: { views: 42 },
+      },
+      {
+        slug: "내-프로젝트에-짧고-빠르게-storybook-도입하기",
+        _count: { views: 42 },
+      },
+      {
+        slug: "figmable-cli-배포무료플랜에서-피그마-rest-api로-토큰-가져오기",
+        _count: { views: 100 },
       },
     ]);
 
@@ -61,20 +69,22 @@ describe("PopularPostsLoader", () => {
     const posts = props.posts;
     expect(posts).toHaveLength(4);
     expect(posts.map((post) => post.title)).toEqual([
-      "Fluttrer Web에서 Javascript 유연하게 사용하기 (feat. JS interop의 A to Z)",
-      "TeoConf2024 스피커 후기",
       "피그마 무료 플랜에서 컬러 코드 추출 자동화하기! (feat. Figmable CLI 배포)",
+      "TeoConf2024 스피커 후기",
       "짧고 빠르게 Storybook 도입하기!",
+      "Fluttrer Web에서 Javascript 유연하게 사용하기 (feat. JS interop의 A to Z)",
     ]);
+    expect(posts[0]).toMatchObject({ viewCount: 100, isBaseline: false });
     expect(posts[1]).toMatchObject({ viewCount: 42, isBaseline: false });
     expect(posts[1].href).toBe("/posts/teoconf2024-스피커-후기-bloj8ivk");
-    expect(posts[0]).toMatchObject({ viewCount: 0, isBaseline: true });
+    expect(posts[2]).toMatchObject({ viewCount: 42, isBaseline: false });
+    expect(posts[3]).toMatchObject({ viewCount: 0, isBaseline: true });
     expect(posts.map((post) => format(post.createdAt, "yyyy-MM-dd"))).toEqual([
-      "2024-11-10",
-      "2025-02-10",
       "2025-03-16",
+      "2025-02-10",
       "2025-01-19",
+      "2024-11-10",
     ]);
-    expect(posts[0].href).toBe("https://byungskerlog.com/posts/fluttrer-web에서-javascript-유연하게-사용하기");
+    expect(posts[3].href).toBe("https://byungskerlog.com/posts/fluttrer-web에서-javascript-유연하게-사용하기");
   });
 });

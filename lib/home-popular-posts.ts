@@ -21,8 +21,8 @@ export function createCalendarDate(date: string) {
 }
 
 /**
- * Editorially selected historical posts. Keep this order stable: live metrics
- * enrich these records but never choose or reorder homepage entries.
+ * Editorially selected historical posts. Keep this candidate set stable while
+ * the homepage orders these records by their live view counts.
  */
 export const HISTORICAL_POPULAR_POSTS: readonly HistoricalPopularPostSeed[] = [
   {
