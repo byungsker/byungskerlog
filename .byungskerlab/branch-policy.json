@@ -48,7 +48,8 @@
         "package.json",
         "prisma/**",
         "public/**",
-        "types/**"
+        "types/**",
+        ".github/workflows/ci.yml"
       ]
     }
   }
