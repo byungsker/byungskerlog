@@ -18,9 +18,13 @@ describe("rate limit helpers", () => {
     const realIpRequest = new NextRequest("http://localhost:3000", {
       headers: { "x-real-ip": "198.51.100.21" },
     });
+    const forwardedOnlyRequest = new NextRequest("http://localhost:3000", {
+      headers: { "x-forwarded-for": "198.51.100.22, 10.0.0.1" },
+    });
 
-    expect(getClientIp(forwardedRequest)).toBe("203.0.113.20");
+    expect(getClientIp(forwardedRequest)).toBe("198.51.100.20");
     expect(getClientIp(realIpRequest)).toBe("198.51.100.21");
+    expect(getClientIp(forwardedOnlyRequest)).toBe("198.51.100.22");
   });
 
   it("429 응답에 retry와 표준 rate-limit 헤더를 포함한다", async () => {

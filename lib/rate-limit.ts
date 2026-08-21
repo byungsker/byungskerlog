@@ -1,5 +1,6 @@
 import { LRUCache } from "lru-cache";
 import { NextResponse } from "next/server";
+import { ErrorCode } from "@/lib/api/errors";
 
 export const RATE_LIMIT_WINDOW_MS = 60_000;
 
@@ -55,6 +56,20 @@ export function checkRateLimit(identifier: string, limit: number = 20): RateLimi
 }
 
 export function getClientIp(request: Request): string {
+  // Vercel overwrites x-real-ip with the original client address. Prefer it
+  // so a caller cannot rotate the public rate-limit bucket by supplying a
+  // forged x-forwarded-for chain. The forwarded header remains a local/test
+  // fallback; production without the trusted provider header fails closed to
+  // one bucket instead of trusting an attacker-controlled value.
+  const trustedClientIp = request.headers.get("x-real-ip")?.trim();
+  if (trustedClientIp) {
+    return trustedClientIp;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return "unknown";
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   const firstForwardedIp = forwardedFor
     ?.split(",")
@@ -93,7 +108,7 @@ export function rateLimitExceededResponse(result: RateLimitResult, limit: number
   return NextResponse.json(
     {
       error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
-      code: "RATE_LIMIT_EXCEEDED",
+      code: ErrorCode.RATE_LIMIT_EXCEEDED,
       retryAfter,
     },
     {
