@@ -52,7 +52,8 @@
         "public/**",
         "types/**",
         "vitest.config.ts",
-        ".github/workflows/ci.yml"
+        ".github/workflows/ci.yml",
+        ".github/workflows/deploy.yml"
       ]
     }
   }
