@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createCalendarDate, HISTORICAL_POPULAR_POSTS } from "@/lib/home-popular-posts";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { getDistinctPostViewCounts } from "@/lib/analytics/post-view-stats";
 import { PopularPosts } from "./PopularPosts";
 
 const getPopularPosts = unstable_cache(
@@ -17,10 +18,11 @@ const getPopularPosts = unstable_cache(
         slug: true,
         title: true,
         createdAt: true,
-        _count: { select: { views: true } },
       },
     });
 
+    const viewCounts = await getDistinctPostViewCounts(posts.map((post) => post.id));
+    const viewCountByPostId = new Map(viewCounts.map((view) => [view.postId, view.count]));
     const postsBySlug = new Map(posts.map((post) => [post.slug, post]));
     const seedOrder = new Map(HISTORICAL_POPULAR_POSTS.map((post, index) => [post.slug, index]));
 
@@ -32,7 +34,7 @@ const getPopularPosts = unstable_cache(
         href: post ? `/posts/${post.slug}` : seed.legacyUrl,
         title: seed.title,
         createdAt: createCalendarDate(seed.publishedAt),
-        viewCount: post?._count.views ?? 0,
+        viewCount: post ? viewCountByPostId.get(post.id) ?? 0 : 0,
         isBaseline: !post,
       };
     }).sort((a, b) => b.viewCount - a.viewCount || seedOrder.get(a.id)! - seedOrder.get(b.id)!);

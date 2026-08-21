@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stackServerApp } from "@/stack/server";
-
-const ALLOWED_EMAILS = ["extreme0728@gmail.com", "admin@byungskerlog.com"];
+import { isAuthorizedMember } from "@/lib/auth-allowlist";
+import { isAuthorizedAdmin } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
   const user = await stackServerApp.getUser();
 
   // 로그인된 사용자가 화이트리스트에 없으면 unauthorized 페이지로
-  if (user && user.primaryEmail && !ALLOWED_EMAILS.includes(user.primaryEmail)) {
+  if (user && !isAuthorizedMember(user)) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
@@ -36,6 +36,10 @@ export async function middleware(request: NextRequest) {
       const signInUrl = new URL("/handler/sign-in", request.url);
       signInUrl.searchParams.set("after", pathname);
       return NextResponse.redirect(signInUrl);
+    }
+
+    if (!isAuthorizedAdmin(user)) {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }
 

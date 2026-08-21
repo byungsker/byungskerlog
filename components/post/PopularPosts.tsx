@@ -29,7 +29,7 @@ export function PopularPosts({ posts }: PopularPostsProps) {
           </h1>
         </div>
         <span className="popular-posts-count hidden text-sm text-muted-foreground sm:inline">
-          고정 목록 · 조회수 연동
+          고정 목록 · 고유 사용자 조회수 연동
         </span>
       </div>
 

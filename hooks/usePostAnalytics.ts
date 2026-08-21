@@ -5,23 +5,23 @@ import { apiClient } from "@/lib/api/client";
 
 type StatType = "category" | "views" | "count" | "reading";
 
-interface CategoryStat {
+export interface CategoryStat {
   tag: string;
   count: number;
 }
 
-interface ViewsStat {
+export interface ViewsStat {
   title: string;
   slug: string;
   views: number;
 }
 
-interface CountStat {
+export interface CountStat {
   date: string;
   count: number;
 }
 
-interface ReadingStat {
+export interface ReadingStat {
   title: string;
   slug: string;
   sessions: number;
@@ -37,7 +37,9 @@ interface UsePostAnalyticsOptions {
   enabled?: boolean;
 }
 
-export function usePostAnalytics<T = CategoryStat[] | ViewsStat[] | CountStat[]>(options: UsePostAnalyticsOptions) {
+export function usePostAnalytics<T = CategoryStat[] | ViewsStat[] | CountStat[] | ReadingStat[]>(
+  options: UsePostAnalyticsOptions
+) {
   const { startDate, endDate, type, statType, enabled = true } = options;
 
   const params = new URLSearchParams();

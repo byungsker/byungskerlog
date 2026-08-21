@@ -1,10 +1,11 @@
 "use client";
 
 import { useUser } from "@stackframe/stack";
+import { isAdminEmail } from "@/lib/auth-allowlist";
 
-export const ADMIN_EMAILS = ["extreme0728@gmail.com", "admin@byungskerlog.com"];
+export { ADMIN_EMAILS } from "@/lib/auth-allowlist";
 
 export function useIsAdmin(): boolean {
   const user = useUser();
-  return Boolean(user?.primaryEmail && ADMIN_EMAILS.includes(user.primaryEmail));
+  return isAdminEmail(user?.primaryEmail);
 }

@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
+import { parseAnalyticsDateRange, type AnalyticsDateRange } from "@/lib/analytics/date-range";
+import { getDistinctPostViewCounts } from "@/lib/analytics/post-view-stats";
 
 type StatType = "category" | "views" | "count" | "reading";
+type PostType = "LONG" | "SHORT";
+
+const STAT_TYPES: StatType[] = ["category", "views", "count", "reading"];
+const POST_TYPES: Array<"all" | PostType> = ["all", "LONG", "SHORT"];
+
+interface PostWhereClause {
+  published: true;
+  type?: PostType;
+}
+
+function isStatType(value: string | null): value is StatType {
+  return value !== null && STAT_TYPES.includes(value as StatType);
+}
+
+function getPostType(value: string | null): PostType | undefined {
+  if (!value || value === "all") return undefined;
+  if (!POST_TYPES.includes(value as "all" | PostType)) {
+    throw ApiError.validationError("Invalid type. Must be 'all', 'LONG', or 'SHORT'");
+  }
+  return value as PostType;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,57 +35,44 @@ export async function GET(request: NextRequest) {
       throw ApiError.unauthorized();
     }
 
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access is required");
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const type = searchParams.get("type");
-    const statType = searchParams.get("statType") as StatType | null;
+    const statType = searchParams.get("statType");
 
-    if (!statType || !["category", "views", "count", "reading"].includes(statType)) {
+    if (!isStatType(statType)) {
       throw ApiError.validationError("Invalid statType. Must be 'category', 'views', 'count', or 'reading'");
     }
 
-    type WhereClause = {
-      published?: boolean;
-      type?: "LONG" | "SHORT";
-      createdAt?: {
-        gte?: Date;
-        lt?: Date;
-      };
-    };
-
-    const where: WhereClause = { published: true };
-
-    if (type && type !== "all" && (type === "LONG" || type === "SHORT")) {
-      where.type = type;
+    let dateRange: AnalyticsDateRange;
+    try {
+      dateRange = parseAnalyticsDateRange(startDate, endDate);
+    } catch (error) {
+      throw ApiError.validationError(error instanceof Error ? error.message : "Invalid date range");
     }
 
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        where.createdAt.lt = end;
-      }
-    }
+    const postType = getPostType(type);
+    const postWhere: PostWhereClause = { published: true, ...(postType ? { type: postType } : {}) };
 
     let data;
 
     switch (statType) {
       case "category":
-        data = await getCategoryStats(where);
+        data = await getCategoryStats({ ...postWhere, createdAt: dateRange });
         break;
       case "views":
-        data = await getViewsStats(where);
+        data = await getViewsStats(postWhere, dateRange);
         break;
       case "count":
-        data = await getCountStats(where);
+        data = await getCountStats({ ...postWhere, createdAt: dateRange });
         break;
       case "reading":
-        data = await getReadingStats(where);
+        data = await getReadingStats(postWhere, dateRange);
         break;
     }
 
@@ -73,9 +83,9 @@ export async function GET(request: NextRequest) {
 }
 
 async function getCategoryStats(where: {
-  published?: boolean;
-  type?: "LONG" | "SHORT";
-  createdAt?: { gte?: Date; lt?: Date };
+  published: true;
+  type?: PostType;
+  createdAt: AnalyticsDateRange;
 }) {
   const posts = await prisma.post.findMany({
     where,
@@ -100,10 +110,9 @@ async function getCategoryStats(where: {
 }
 
 async function getViewsStats(where: {
-  published?: boolean;
-  type?: "LONG" | "SHORT";
-  createdAt?: { gte?: Date; lt?: Date };
-}) {
+  published: true;
+  type?: PostType;
+}, dateRange: AnalyticsDateRange) {
   const posts = await prisma.post.findMany({
     where,
     select: { id: true, title: true, slug: true },
@@ -115,13 +124,9 @@ async function getViewsStats(where: {
     return [];
   }
 
-  const views = await prisma.postView.groupBy({
-    by: ["postId"],
-    where: { postId: { in: postIds } },
-    _count: { postId: true },
-  });
+  const views = await getDistinctPostViewCounts(postIds, dateRange);
 
-  const viewMap = new Map(views.map((v) => [v.postId, v._count.postId]));
+  const viewMap = new Map(views.map((v) => [v.postId, v.count]));
 
   return posts
     .map((post) => ({
@@ -129,14 +134,15 @@ async function getViewsStats(where: {
       slug: post.slug,
       views: viewMap.get(post.id) || 0,
     }))
+    .filter((post) => post.views > 0)
     .sort((a, b) => b.views - a.views)
     .slice(0, 10);
 }
 
 async function getCountStats(where: {
-  published?: boolean;
-  type?: "LONG" | "SHORT";
-  createdAt?: { gte?: Date; lt?: Date };
+  published: true;
+  type?: PostType;
+  createdAt: AnalyticsDateRange;
 }) {
   const posts = await prisma.post.findMany({
     where,
@@ -156,10 +162,13 @@ async function getCountStats(where: {
 }
 
 async function getReadingStats(where: {
-  published?: boolean;
-  type?: "LONG" | "SHORT";
-  createdAt?: { gte?: Date; lt?: Date };
-}) {
+  published: true;
+  type?: PostType;
+}, dateRange: AnalyticsDateRange) {
+  if (where.type === "SHORT") {
+    return [];
+  }
+
   const longWhere = { ...where, type: "LONG" as const };
 
   const posts = await prisma.post.findMany({
@@ -175,7 +184,7 @@ async function getReadingStats(where: {
 
   const sessions = await prisma.readingSession.groupBy({
     by: ["postId"],
-    where: { postId: { in: postIds } },
+    where: { postId: { in: postIds }, createdAt: dateRange },
     _count: { id: true },
     _avg: { maxScrollDepth: true },
   });
@@ -185,6 +194,7 @@ async function getReadingStats(where: {
     where: {
       postId: { in: postIds },
       completed: true,
+      createdAt: dateRange,
     },
     _count: { id: true },
   });

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePostListCaches } from "@/lib/post-cache";
 import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
+import { getUtcDateOnly, parseAnalyticsDateRange } from "@/lib/analytics/date-range";
+import { getDistinctPostViewStats } from "@/lib/analytics/post-view-stats";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { buildPostTagsPayload } from "@/lib/server/post-tags";
 
@@ -261,32 +263,16 @@ export async function GET(request: NextRequest) {
       tags: post.tags.map((t) => t.name),
     }));
 
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const today = getUtcDateOnly();
+    const { gte: startOfToday, lt: startOfTomorrow } = parseAnalyticsDateRange(today, today);
     const postIds = posts.map((post) => post.id);
 
-    const allViews =
-      postIds.length > 0
-        ? await prisma.postView.findMany({
-            where: { postId: { in: postIds } },
-            select: {
-              postId: true,
-              viewedAt: true,
-            },
-          })
-        : [];
-
-    const viewStats = allViews.reduce(
-      (acc, view) => {
-        if (!acc[view.postId]) {
-          acc[view.postId] = { totalViews: 0, dailyViews: 0 };
-        }
-        acc[view.postId].totalViews++;
-        if (view.viewedAt >= oneDayAgo) {
-          acc[view.postId].dailyViews++;
-        }
-        return acc;
-      },
-      {} as Record<string, { totalViews: number; dailyViews: number }>
+    const distinctViewStats = await getDistinctPostViewStats(postIds, {
+      gte: startOfToday,
+      lt: startOfTomorrow,
+    });
+    const viewStats = Object.fromEntries(
+      distinctViewStats.map((view) => [view.postId, { totalViews: view.totalViews, dailyViews: view.dailyViews }])
     );
 
     const longPostIds = posts.filter((p) => p.type === "LONG").map((p) => p.id);

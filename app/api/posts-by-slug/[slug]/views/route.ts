@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePostListCaches } from "@/lib/post-cache";
+import { resolveVisitorId, setVisitorIdCookie } from "@/lib/analytics/visitor-identity";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -19,11 +20,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Get IP address and user agent
     const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
+    const { visitorId, cookieValue } = resolveVisitorId(request);
 
     // Record view
     await prisma.postView.create({
       data: {
         postId: post.id,
+        visitorId,
         ipAddress,
         userAgent,
       },
@@ -35,7 +38,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       console.error("Failed to invalidate post list caches after recording view:", error);
     }
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    const response = NextResponse.json({ success: true }, { status: 201 });
+    setVisitorIdCookie(response, cookieValue);
+    return response;
   } catch (error) {
     console.error("Error recording view:", error);
     return NextResponse.json({ error: "Failed to record view" }, { status: 500 });
