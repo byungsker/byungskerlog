@@ -1,34 +1,48 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
+import { API_RATE_LIMITS } from "@/lib/api/security-policy";
+import { checkUserRateLimit, rateLimitExceededResponse, setRateLimitHeaders } from "@/lib/rate-limit";
+import { UploadPolicyError, createBlobFilename, readUploadPayload } from "@/lib/upload-policy";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, { status: 401 });
+  }
+
+  if (!isAuthorizedAdmin(user)) {
+    return NextResponse.json({ error: "Administrator access is required", code: "FORBIDDEN" }, { status: 403 });
+  }
+
+  const rateLimit = checkUserRateLimit(user.id, "upload", API_RATE_LIMITS.upload.limit);
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit, API_RATE_LIMITS.upload.limit);
+  }
+
+  const filename = new URL(request.url).searchParams.get("filename");
+  if (!filename) {
+    const response = NextResponse.json({ error: "Filename is required", code: "BAD_REQUEST" }, { status: 400 });
+    return setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.upload.limit);
+  }
+
   try {
-    const user = await getAuthUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const filename = searchParams.get("filename");
-
-    if (!filename) {
-      return NextResponse.json({ error: "Filename is required" }, { status: 400 });
-    }
-
-    if (!request.body) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const thumbnailFilename = `thumbnail-${Date.now()}-${filename}`;
-
-    const blob = await put(thumbnailFilename, request.body, {
+    const payload = await readUploadPayload(request);
+    const blob = await put(createBlobFilename("thumbnail", filename, payload.contentType), payload.bytes, {
       access: "public",
+      contentType: payload.contentType,
     });
 
-    return NextResponse.json(blob);
+    const response = NextResponse.json(blob);
+    return setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.upload.limit);
   } catch (error) {
+    if (error instanceof UploadPolicyError) {
+      const response = NextResponse.json({ error: error.message, code: error.code }, { status: error.statusCode });
+      return setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.upload.limit);
+    }
+
     console.error("Thumbnail upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    const response = NextResponse.json({ error: "Upload failed", code: "INTERNAL_ERROR" }, { status: 500 });
+    return setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.upload.limit);
   }
 }

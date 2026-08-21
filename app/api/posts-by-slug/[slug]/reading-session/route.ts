@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { API_RATE_LIMITS } from "@/lib/api/security-policy";
+import { checkRequestRateLimit, rateLimitExceededResponse, setRateLimitHeaders } from "@/lib/rate-limit";
 
 interface ReadingSessionBody {
   sessionId: string;
@@ -9,6 +11,11 @@ interface ReadingSessionBody {
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const rateLimit = checkRequestRateLimit(request, "analytics:reading-session", API_RATE_LIMITS.readingSession.limit);
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit, API_RATE_LIMITS.readingSession.limit);
+  }
+
   try {
     const { slug } = await params;
     const body: ReadingSessionBody = await request.json();
@@ -69,7 +76,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    const response = NextResponse.json({ success: true }, { status: 200 });
+    setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.readingSession.limit);
+    return response;
   } catch (error) {
     console.error("Error recording reading session:", error);
     return NextResponse.json({ error: "Failed to record reading session" }, { status: 500 });
