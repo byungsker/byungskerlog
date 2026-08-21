@@ -30,7 +30,8 @@
       "profile": "web-continuous",
       "mode": "continuous",
       "active_versions": [
-        "0.2.0"
+        "0.2.0",
+        "0.3.0"
       ],
       "target_version_source": ".byungskerlab/release-lines.json",
       "production_branch": "main",
