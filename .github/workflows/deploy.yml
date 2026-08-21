@@ -31,18 +31,24 @@ jobs:
       - name: Check migration status
         id: migration_check
         run: |
-          STATUS=$(npx prisma migrate status --schema=prisma/schema.prisma 2>&1 || true)
+          set +e
+          STATUS=$(npx prisma migrate status --schema=prisma/schema.prisma 2>&1)
+          STATUS_EXIT=$?
+          set -e
           echo "$STATUS"
 
-          if echo "$STATUS" | grep -q "Database schema is up to date"; then
+          if echo "$STATUS" | grep -qi "Database schema is up to date"; then
             echo "migrations_needed=false" >> $GITHUB_OUTPUT
             echo "✅ No migrations needed"
-          elif echo "$STATUS" | grep -q "following migrations have not yet been applied"; then
+          elif echo "$STATUS" | grep -qi "following migrations have not yet been applied"; then
             echo "migrations_needed=true" >> $GITHUB_OUTPUT
             echo "⚠️  Pending migrations detected"
           else
-            echo "migrations_needed=false" >> $GITHUB_OUTPUT
-            echo "ℹ️  Migration status unclear, proceeding with caution"
+            echo "❌ Unable to determine migration status; refusing deployment"
+            if [ "$STATUS_EXIT" -ne 0 ]; then
+              exit "$STATUS_EXIT"
+            fi
+            exit 1
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
@@ -62,7 +68,7 @@ jobs:
         if: steps.migration_check.outputs.migrations_needed == 'true'
         run: |
           STATUS=$(npx prisma migrate status 2>&1)
-          if echo "$STATUS" | grep -q "Database schema is up to date"; then
+          if echo "$STATUS" | grep -qi "Database schema is up to date"; then
             echo "✅ Migration verification passed"
           else
             echo "❌ Migration verification failed"
