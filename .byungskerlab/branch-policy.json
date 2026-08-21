@@ -45,11 +45,13 @@
         "components/**",
         "hooks/**",
         "lib/**",
+        "middleware.ts",
         "package-lock.json",
         "package.json",
         "prisma/**",
         "public/**",
         "types/**",
+        "vitest.config.ts",
         ".github/workflows/ci.yml"
       ]
     }
