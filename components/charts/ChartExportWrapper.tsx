@@ -20,6 +20,7 @@ interface ChartExportWrapperProps {
   children: React.ReactNode;
   filename: string;
   title: string;
+  description?: string;
   showExportButton?: boolean;
   onExportAll?: (scale: ExportScale, aspectRatio: ExportAspectRatio) => void;
   isExportingAll?: boolean;
@@ -151,7 +152,7 @@ function exportSvgToBlob(
 }
 
 export const ChartExportWrapper = forwardRef<ChartExportHandle, ChartExportWrapperProps>(
-  ({ children, filename, title, showExportButton = true, onExportAll, isExportingAll = false }, ref) => {
+  ({ children, filename, title, description, showExportButton = true, onExportAll, isExportingAll = false }, ref) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [isExporting, setIsExporting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -231,8 +232,11 @@ export const ChartExportWrapper = forwardRef<ChartExportHandle, ChartExportWrapp
 
     return (
       <div className="chart-export-wrapper">
-        <div className="chart-export-header flex items-center justify-between p-4 pb-0 gap-2">
-          <h2 className="chart-export-title text-base sm:text-lg font-semibold">{title}</h2>
+        <div className="chart-export-header flex items-start justify-between p-4 pb-0 gap-2">
+          <div className="min-w-0">
+            <h2 className="chart-export-title text-base sm:text-lg font-semibold">{title}</h2>
+            {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
+          </div>
           {showExportButton && (
             <div className="chart-export-button-group flex flex-shrink-0">
               <Button
@@ -371,7 +375,7 @@ export const ChartExportWrapper = forwardRef<ChartExportHandle, ChartExportWrapp
                 </Select>
               </div>
               <p className="text-sm text-muted-foreground">
-                4개의 차트(카테고리별, 조회수 TOP, 글쓰기 추이, 완독률)를 ZIP 파일로 저장합니다.
+                4개의 차트(태그별 공개 글, 고유 사용자 조회수, 공개 글 생성 추이, 세션 완료율)를 ZIP 파일로 저장합니다.
               </p>
             </div>
             <DialogFooter>

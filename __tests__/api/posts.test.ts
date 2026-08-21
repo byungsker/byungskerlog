@@ -40,6 +40,7 @@ function createPostRequest(path: string, body: object): NextRequest {
 describe("게시글 목록 조회 GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
+    mockPrisma.$queryRaw.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
     mockIsAuthorizedAdmin.mockReset();
     mockRevalidateTag.mockReset();
@@ -66,7 +67,6 @@ describe("게시글 목록 조회 GET /api/posts", () => {
 
     mockPrisma.post.count.mockResolvedValue(1);
     mockPrisma.post.findMany.mockResolvedValue(mockPosts);
-    mockPrisma.postView.findMany.mockResolvedValue([]);
     mockPrisma.readingSession.findMany.mockResolvedValue([]);
 
     const request = createGetRequest("/api/posts");
@@ -87,7 +87,6 @@ describe("게시글 목록 조회 GET /api/posts", () => {
   it("쿼리 파라미터로 필터링할 수 있다", async () => {
     mockPrisma.post.count.mockResolvedValue(0);
     mockPrisma.post.findMany.mockResolvedValue([]);
-    mockPrisma.postView.findMany.mockResolvedValue([]);
     mockPrisma.readingSession.findMany.mockResolvedValue([]);
 
     const request = createGetRequest("/api/posts?tag=react&type=LONG&page=2&limit=10");
@@ -119,7 +118,6 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.count.mockResolvedValue(0);
     mockPrisma.post.findMany.mockResolvedValue([]);
-    mockPrisma.postView.findMany.mockResolvedValue([]);
     mockPrisma.readingSession.findMany.mockResolvedValue([]);
 
     const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
@@ -132,6 +130,7 @@ describe("게시글 목록 조회 GET /api/posts", () => {
 describe("게시글 생성 POST /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
+    mockPrisma.$queryRaw.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
     mockIsAuthorizedAdmin.mockReset();
   });

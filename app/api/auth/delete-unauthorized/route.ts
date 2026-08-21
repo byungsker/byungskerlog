@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
-
-const ALLOWED_EMAILS = ["extreme0728@gmail.com", "admin@byungskerlog.com"];
+import { isAuthorizedMember } from "@/lib/auth-allowlist";
 
 export async function POST() {
   try {
@@ -11,7 +10,7 @@ export async function POST() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    if (!user.primaryEmail || ALLOWED_EMAILS.includes(user.primaryEmail)) {
+    if (isAuthorizedMember(user)) {
       return NextResponse.json({ error: "User is authorized" }, { status: 400 });
     }
 

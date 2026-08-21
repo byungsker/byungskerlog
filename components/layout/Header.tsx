@@ -8,12 +8,11 @@ import { VisitorCount } from "@/components/analytics/VisitorCount";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser, useStackApp } from "@stackframe/stack";
+import { isAdminEmail } from "@/lib/auth-allowlist";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { Button } from "@/components/ui/Button";
 import { SwipeDrawer, SwipeDrawerHeader, SwipeDrawerContent } from "@/components/ui/SwipeDrawer";
 import { PenSquare, LogOut, Menu, FileText, FolderOpen, ChevronDown, ChevronsRight } from "lucide-react";
-
-const ALLOWED_EMAILS = ["extreme0728@gmail.com", "admin@byungskerlog.com"];
 
 export function Header() {
   const pathname = usePathname();
@@ -28,7 +27,7 @@ export function Header() {
 
   const isScrollVisible = useScrollHeader({ threshold: 30, disabled: !isDetailPage });
 
-  const isAuthorized = user && user.primaryEmail && ALLOWED_EMAILS.includes(user.primaryEmail);
+  const isAuthorized = isAdminEmail(user?.primaryEmail);
 
   const navItems = [
     { label: "Posts", href: "/posts" },

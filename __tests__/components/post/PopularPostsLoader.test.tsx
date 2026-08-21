@@ -6,6 +6,7 @@ import { PopularPostsLoader } from "@/components/post/PopularPostsLoader";
 
 const mockPrisma = vi.hoisted(() => ({
   post: { findMany: vi.fn() },
+  $queryRaw: vi.fn(),
 }));
 
 interface RenderedPopularPost {
@@ -30,6 +31,7 @@ vi.mock("@/components/post/PopularPosts", () => ({ PopularPosts: popularPostsMoc
 describe("PopularPostsLoader", () => {
   beforeEach(() => {
     mockPrisma.post.findMany.mockReset();
+    mockPrisma.$queryRaw.mockReset();
     popularPostsMock.mockClear();
   });
 
@@ -50,16 +52,21 @@ describe("PopularPostsLoader", () => {
     mockPrisma.post.findMany.mockResolvedValue([
       {
         slug: "teoconf2024-스피커-후기-bloj8ivk",
-        _count: { views: 42 },
+        id: "post-42",
       },
       {
         slug: "내-프로젝트에-짧고-빠르게-storybook-도입하기",
-        _count: { views: 42 },
+        id: "post-42b",
       },
       {
         slug: "figmable-cli-배포무료플랜에서-피그마-rest-api로-토큰-가져오기",
-        _count: { views: 100 },
+        id: "post-100",
       },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { postId: "post-42", count: BigInt(42) },
+      { postId: "post-42b", count: BigInt(42) },
+      { postId: "post-100", count: BigInt(100) },
     ]);
 
     render(await PopularPostsLoader());
