@@ -45,7 +45,7 @@ export function PopularPosts({ posts }: PopularPostsProps) {
                 <span>{format(post.createdAt, "yyyy.MM.dd")}</span>
                 <ArrowUpRight
                   aria-hidden="true"
-                  className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  className="popular-posts-link-icon h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                 />
               </div>
             </Link>
