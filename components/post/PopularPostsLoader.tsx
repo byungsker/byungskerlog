@@ -26,7 +26,7 @@ const getPopularPosts = unstable_cache(
     const postsBySlug = new Map(posts.map((post) => [post.slug, post]));
     const seedOrder = new Map(HISTORICAL_POPULAR_POSTS.map((post, index) => [post.slug, index]));
 
-    return HISTORICAL_POPULAR_POSTS.map((seed) => {
+    const rankedPosts = HISTORICAL_POPULAR_POSTS.map((seed) => {
       const post = postsBySlug.get(seed.slug);
 
       return {
@@ -34,10 +34,12 @@ const getPopularPosts = unstable_cache(
         href: post ? `/posts/${post.slug}` : seed.legacyUrl,
         title: seed.title,
         createdAt: createCalendarDate(seed.publishedAt),
-        viewCount: post ? viewCountByPostId.get(post.id) ?? 0 : 0,
+        viewCount: post ? (viewCountByPostId.get(post.id) ?? 0) : 0,
         isBaseline: !post,
       };
     }).sort((a, b) => b.viewCount - a.viewCount || seedOrder.get(a.id)! - seedOrder.get(b.id)!);
+
+    return rankedPosts.map(({ id, href, title, createdAt }) => ({ id, href, title, createdAt }));
   },
   ["home-historical-popular-posts"],
   { revalidate: 3600, tags: ["posts"] }

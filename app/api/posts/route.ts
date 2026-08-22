@@ -144,14 +144,15 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate");
     const type = searchParams.get("type");
     const search = searchParams.get("search");
+    const user = await getAuthUser();
+    const isAdmin = Boolean(user && isAuthorizedAdmin(user));
     let includeUnpublished = false;
 
     if (includeUnpublishedRequested) {
-      const user = await getAuthUser();
       if (!user) {
         throw ApiError.unauthorized();
       }
-      if (!isAuthorizedAdmin(user)) {
+      if (!isAdmin) {
         throw ApiError.forbidden("Administrator access required");
       }
       includeUnpublished = true;
@@ -326,9 +327,17 @@ export async function GET(request: NextRequest) {
 
     const sortedPosts =
       sortBy === "popular" ? postsWithViews.sort((a, b) => b.totalViews - a.totalViews) : postsWithViews;
+    const responsePosts = isAdmin
+      ? sortedPosts
+      : sortedPosts.map((post) => {
+          const publicPost = { ...post };
+          Reflect.deleteProperty(publicPost, "totalViews");
+          Reflect.deleteProperty(publicPost, "dailyViews");
+          return publicPost;
+        });
 
     return NextResponse.json({
-      posts: sortedPosts,
+      posts: responsePosts,
       pagination: {
         page,
         limit,
