@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { checkRateLimit, getClientIp, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 describe("rate limit helpers", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("limit까지 허용한 뒤 같은 식별자를 차단한다", () => {
     const identifier = `rate-limit-test-${Date.now()}-${Math.random()}`;
 
@@ -11,7 +15,7 @@ describe("rate limit helpers", () => {
     expect(checkRateLimit(identifier, 2)).toMatchObject({ allowed: false, count: 2, remaining: 0 });
   });
 
-  it("x-forwarded-for의 첫 IP를 rate-limit 식별자로 사용하고 real-ip로 fallback한다", () => {
+  it("trusted real-ip를 사용하고 production에서 forwarded-only 요청은 fail closed한다", () => {
     const forwardedRequest = new NextRequest("http://localhost:3000", {
       headers: { "x-forwarded-for": "203.0.113.20, 10.0.0.1", "x-real-ip": "198.51.100.20" },
     });
@@ -24,7 +28,8 @@ describe("rate limit helpers", () => {
 
     expect(getClientIp(forwardedRequest)).toBe("198.51.100.20");
     expect(getClientIp(realIpRequest)).toBe("198.51.100.21");
-    expect(getClientIp(forwardedOnlyRequest)).toBe("198.51.100.22");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(getClientIp(forwardedOnlyRequest)).toBe("unknown");
   });
 
   it("429 응답에 retry와 표준 rate-limit 헤더를 포함한다", async () => {

@@ -34,6 +34,29 @@ function createRequest(path: string, body: BodyInit | null = PNG_BYTES, headers:
   });
 }
 
+function createOversizedStreamRequest(path: string): Request {
+  const chunk = new Uint8Array(1024 * 1024);
+  let chunksSent = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (chunksSent < 11) {
+        chunksSent += 1;
+        controller.enqueue(chunk);
+        return;
+      }
+
+      controller.close();
+    },
+  });
+
+  return new Request(`http://localhost:3000${path}`, {
+    method: "POST",
+    body,
+    headers: { "content-type": "image/png" },
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+}
+
 describe("POST /api/upload", () => {
   beforeEach(() => {
     mockPut.mockReset();
@@ -101,6 +124,17 @@ describe("POST /api/upload", () => {
     const response = await upload(
       createRequest("/api/upload?filename=image.png", PNG_BYTES, { "content-length": `${10 * 1024 * 1024 + 1}` })
     );
+
+    expect(response.status).toBe(413);
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it("Content-Length가 없는 oversized streaming body도 blob 저장 전에 거부한다", async () => {
+    const request = createOversizedStreamRequest("/api/upload?filename=image.png");
+
+    expect(request.headers.has("content-length")).toBe(false);
+
+    const response = await upload(request);
 
     expect(response.status).toBe(413);
     expect(mockPut).not.toHaveBeenCalled();

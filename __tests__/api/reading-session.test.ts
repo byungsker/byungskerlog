@@ -33,7 +33,7 @@ function createRequest() {
   });
 }
 
-describe("POST /api/posts-by-slug/[slug]/reading-session", () => {
+describe("POST /api/posts-by-slug/[slug]/reading-session 읽기 세션", () => {
   beforeEach(() => {
     mockPrisma.post.findFirst.mockReset();
     mockPrisma.readingSession.findUnique.mockReset();
