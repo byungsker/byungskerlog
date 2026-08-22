@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePostListCaches } from "@/lib/post-cache";
 import { resolveVisitorId, setVisitorIdCookie } from "@/lib/analytics/visitor-identity";
+import { API_RATE_LIMITS } from "@/lib/api/security-policy";
+import { checkRequestRateLimit, rateLimitExceededResponse, setRateLimitHeaders } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const rateLimit = checkRequestRateLimit(request, "analytics:views", API_RATE_LIMITS.views.limit);
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit, API_RATE_LIMITS.views.limit);
+  }
+
   try {
     const { slug } = await params;
 
@@ -39,6 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const response = NextResponse.json({ success: true }, { status: 201 });
+    setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.views.limit);
     setVisitorIdCookie(response, cookieValue);
     return response;
   } catch (error) {

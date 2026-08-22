@@ -10,8 +10,16 @@ const { mockRevalidatePostListCaches } = vi.hoisted(() => ({
   mockRevalidatePostListCaches: vi.fn(),
 }));
 
+const { mockCheckRequestRateLimit } = vi.hoisted(() => ({
+  mockCheckRequestRateLimit: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
 vi.mock("@/lib/post-cache", () => ({ revalidatePostListCaches: mockRevalidatePostListCaches }));
+vi.mock("@/lib/rate-limit", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/rate-limit")>("@/lib/rate-limit");
+  return { ...actual, checkRequestRateLimit: mockCheckRequestRateLimit };
+});
 
 import { POST } from "@/app/api/posts-by-slug/[slug]/views/route";
 import { VISITOR_ID_COOKIE } from "@/lib/analytics/visitor-identity";
@@ -23,6 +31,13 @@ describe("POST /api/posts-by-slug/[slug]/views", () => {
     mockPrisma.post.findUnique.mockReset();
     mockPrisma.postView.create.mockReset();
     mockRevalidatePostListCaches.mockReset();
+    mockCheckRequestRateLimit.mockReset();
+    mockCheckRequestRateLimit.mockReturnValue({
+      allowed: true,
+      count: 1,
+      remaining: 59,
+      resetTime: Date.now() + 60000,
+    });
   });
 
   it("조회 기록에 성공하면 인기 글 캐시를 무효화한다", async () => {
@@ -38,9 +53,7 @@ describe("POST /api/posts-by-slug/[slug]/views", () => {
     expect(mockPrisma.postView.create).toHaveBeenCalledWith({
       data: {
         postId: "post-1",
-        visitorId: expect.stringMatching(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-        ),
+        visitorId: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
         ipAddress: "unknown",
         userAgent: "unknown",
       },
@@ -109,5 +122,28 @@ describe("POST /api/posts-by-slug/[slug]/views", () => {
     );
 
     consoleError.mockRestore();
+  });
+
+  it("조회 rate limit을 초과하면 DB 조회 전에 429를 반환한다", async () => {
+    mockCheckRequestRateLimit.mockReturnValue({
+      allowed: false,
+      count: 60,
+      remaining: 0,
+      resetTime: Date.now() + 60000,
+    });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/posts-by-slug/popular-post/views", {
+        method: "POST",
+        headers: { "x-forwarded-for": "203.0.113.10" },
+      }),
+      params
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(data.code).toBe("RATE_LIMIT_EXCEEDED");
+    expect(response.headers.get("Retry-After")).toBeTruthy();
+    expect(mockPrisma.post.findUnique).not.toHaveBeenCalled();
   });
 });

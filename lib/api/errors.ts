@@ -8,6 +8,9 @@ export const ErrorCode = {
   DUPLICATE_ENTRY: "DUPLICATE_ENTRY",
   INTERNAL_ERROR: "INTERNAL_ERROR",
   BAD_REQUEST: "BAD_REQUEST",
+  PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+  UNSUPPORTED_MEDIA_TYPE: "UNSUPPORTED_MEDIA_TYPE",
+  RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -67,6 +70,14 @@ export class ApiError extends Error {
 
   static badRequest(message = "Bad request"): ApiError {
     return new ApiError(ErrorCode.BAD_REQUEST, 400, message);
+  }
+
+  static payloadTooLarge(message = "Payload is too large"): ApiError {
+    return new ApiError(ErrorCode.PAYLOAD_TOO_LARGE, 413, message);
+  }
+
+  static unsupportedMediaType(message = "Unsupported media type"): ApiError {
+    return new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 415, message);
   }
 
   static internal(message = "Internal server error"): ApiError {

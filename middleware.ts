@@ -10,6 +10,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/handler") ||
     pathname.startsWith("/unauthorized") ||
+    // API routes are excluded intentionally. Each handler owns its auth and
+    // abuse policy; page middleware redirects are not API security.
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
