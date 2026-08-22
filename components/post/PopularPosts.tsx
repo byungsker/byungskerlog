@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Eye } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 
 export interface PopularPost {
@@ -7,8 +7,6 @@ export interface PopularPost {
   href: string;
   title: string;
   createdAt: Date;
-  viewCount: number;
-  isBaseline: boolean;
 }
 
 interface PopularPostsProps {
@@ -22,15 +20,10 @@ export function PopularPosts({ posts }: PopularPostsProps) {
 
   return (
     <section aria-labelledby="popular-posts-heading" className="popular-posts-section mb-10 sm:mb-12">
-      <div className="popular-posts-heading-row mb-4 flex items-end justify-between gap-4">
-        <div>
-          <h1 id="popular-posts-heading" className="popular-posts-title text-2xl font-bold tracking-tight sm:text-3xl">
-            많이 읽힌 글
-          </h1>
-        </div>
-        <span className="popular-posts-count hidden text-sm text-muted-foreground sm:inline">
-          고정 목록 · 고유 사용자 조회수 연동
-        </span>
+      <div className="popular-posts-heading-row mb-4">
+        <h1 id="popular-posts-heading" className="popular-posts-title text-2xl font-bold tracking-tight sm:text-3xl">
+          많이 읽힌 글
+        </h1>
       </div>
 
       <ol className="popular-posts-grid grid grid-cols-1 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-4">
@@ -50,15 +43,10 @@ export function PopularPosts({ posts }: PopularPostsProps) {
               </div>
               <div className="popular-posts-meta mt-5 flex items-center justify-between gap-3 pl-8 text-xs text-muted-foreground">
                 <span>{format(post.createdAt, "yyyy.MM.dd")}</span>
-                <span className="popular-posts-views inline-flex items-center gap-1.5">
-                  {post.isBaseline && <span className="font-medium text-primary">기준선</span>}
-                  <Eye aria-hidden="true" className="h-3.5 w-3.5" />
-                  {post.viewCount.toLocaleString("ko-KR")}
-                  <ArrowUpRight
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                  />
-                </span>
+                <ArrowUpRight
+                  aria-hidden="true"
+                  className="popular-posts-link-icon h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                />
               </div>
             </Link>
           </li>

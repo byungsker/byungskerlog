@@ -11,8 +11,6 @@ const mockPrisma = vi.hoisted(() => ({
 
 interface RenderedPopularPost {
   title: string;
-  viewCount: number;
-  isBaseline: boolean;
   href: string;
   createdAt: Date;
 }
@@ -81,11 +79,10 @@ describe("PopularPostsLoader", () => {
       "짧고 빠르게 Storybook 도입하기!",
       "Fluttrer Web에서 Javascript 유연하게 사용하기 (feat. JS interop의 A to Z)",
     ]);
-    expect(posts[0]).toMatchObject({ viewCount: 100, isBaseline: false });
-    expect(posts[1]).toMatchObject({ viewCount: 42, isBaseline: false });
+    expect(posts[0]).not.toHaveProperty("viewCount");
+    expect(posts[0]).not.toHaveProperty("isBaseline");
     expect(posts[1].href).toBe("/posts/teoconf2024-스피커-후기-bloj8ivk");
-    expect(posts[2]).toMatchObject({ viewCount: 42, isBaseline: false });
-    expect(posts[3]).toMatchObject({ viewCount: 0, isBaseline: true });
+    expect(posts[2].href).toBe("/posts/내-프로젝트에-짧고-빠르게-storybook-도입하기");
     expect(posts.map((post) => format(post.createdAt, "yyyy-MM-dd"))).toEqual([
       "2025-03-16",
       "2025-02-10",
@@ -93,5 +90,7 @@ describe("PopularPostsLoader", () => {
       "2024-11-10",
     ]);
     expect(posts[3].href).toBe("https://byungskerlog.com/posts/fluttrer-web에서-javascript-유연하게-사용하기");
+    expect(posts[3]).not.toHaveProperty("viewCount");
+    expect(posts[3]).not.toHaveProperty("isBaseline");
   });
 });

@@ -84,6 +84,68 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     );
   });
 
+  it("비관리자 공개 응답에는 조회수 통계를 포함하지 않는다", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        title: "테스트 포스트",
+        content: "내용",
+        excerpt: null,
+        thumbnail: null,
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        updatedAt: new Date("2024-01-01"),
+        series: null,
+        subSlug: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts?sortBy=popular"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).not.toHaveProperty("totalViews");
+    expect(data.posts[0]).not.toHaveProperty("dailyViews");
+  });
+
+  it("관리자 공개 목록 응답에는 조회수 통계를 포함한다", async () => {
+    mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        title: "테스트 포스트",
+        content: "내용",
+        excerpt: null,
+        thumbnail: null,
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        updatedAt: new Date("2024-01-01"),
+        series: null,
+        subSlug: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).toMatchObject({ totalViews: 12, dailyViews: 3 });
+  });
+
   it("쿼리 파라미터로 필터링할 수 있다", async () => {
     mockPrisma.post.count.mockResolvedValue(0);
     mockPrisma.post.findMany.mockResolvedValue([]);
