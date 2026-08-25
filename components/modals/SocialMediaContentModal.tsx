@@ -121,7 +121,11 @@ export function SocialMediaContentModal({
   const handleOpenThreads = () => {
     navigator.clipboard.writeText(threadsContent[0] || "");
     toast.success("첫 번째 Threads 포스트가 복사되었습니다.");
-    window.open(threadsUrl || postDetail?.threadsUrl || "https://www.threads.com/@byungsker_letter", "_blank");
+    window.open(
+      threadsUrl || postDetail?.threadsUrl || "https://www.threads.com/@byungsker_letter",
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   const handleSave = () => {
