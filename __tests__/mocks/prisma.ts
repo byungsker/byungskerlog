@@ -65,6 +65,7 @@ export const mockPrisma = {
     findMany: vi.fn(),
     findFirst: vi.fn(),
     upsert: vi.fn(),
+    groupBy: vi.fn(),
   },
 };
 

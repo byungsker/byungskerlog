@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { X, Copy, Maximize2, Minimize2, ExternalLink, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useUpdatePost } from "@/hooks/usePostMutations";
+import { usePost } from "@/hooks/usePost";
 import { cn } from "@/lib/utils";
 
 const LINKEDIN_CHAR_LIMIT = 3000;
@@ -69,11 +70,14 @@ export function SocialMediaContentModal({
   onUpdate,
 }: SocialMediaContentModalProps) {
   const isMobile = useIsMobile();
+  const { data: postDetail } = usePost(postId, { enabled: open });
   const [isFullView, setIsFullView] = useState(false);
-  const [linkedinContent, setLinkedinContent] = useState(initialLinkedinContent || "");
-  const [threadsContent, setThreadsContent] = useState<string[]>(initialThreadsContent || [""]);
+  const [linkedinContentOverride, setLinkedinContentOverride] = useState<string | undefined>();
+  const [threadsContentOverride, setThreadsContentOverride] = useState<string[] | undefined>();
   const [hasChanges, setHasChanges] = useState(false);
-  const [lastOpenState, setLastOpenState] = useState(false);
+
+  const linkedinContent = linkedinContentOverride ?? postDetail?.linkedinContent ?? initialLinkedinContent ?? "";
+  const threadsContent = threadsContentOverride ?? postDetail?.threadsContent ?? initialThreadsContent ?? [""];
 
   const updatePostMutation = useUpdatePost({
     showToast: false,
@@ -87,25 +91,15 @@ export function SocialMediaContentModal({
     },
   });
 
-  if (open && !lastOpenState) {
-    setLinkedinContent(initialLinkedinContent || "");
-    setThreadsContent(initialThreadsContent || [""]);
-    setHasChanges(false);
-    setIsFullView(false);
-    setLastOpenState(true);
-  } else if (!open && lastOpenState) {
-    setLastOpenState(false);
-  }
-
   const handleLinkedinChange = (value: string) => {
-    setLinkedinContent(value);
+    setLinkedinContentOverride(value);
     setHasChanges(true);
   };
 
   const handleThreadsChange = (index: number, value: string) => {
     const newContent = [...threadsContent];
     newContent[index] = value;
-    setThreadsContent(newContent);
+    setThreadsContentOverride(newContent);
     setHasChanges(true);
   };
 
@@ -127,7 +121,7 @@ export function SocialMediaContentModal({
   const handleOpenThreads = () => {
     navigator.clipboard.writeText(threadsContent[0] || "");
     toast.success("첫 번째 Threads 포스트가 복사되었습니다.");
-    window.open(threadsUrl || "https://www.threads.com/@byungsker_letter", "_blank");
+    window.open(threadsUrl || postDetail?.threadsUrl || "https://www.threads.com/@byungsker_letter", "_blank");
   };
 
   const handleSave = () => {
@@ -152,7 +146,8 @@ export function SocialMediaContentModal({
 
   const platformLabel = platform === "linkedin" ? "LinkedIn" : "Threads";
   const PlatformIcon = platform === "linkedin" ? LinkedInIcon : ThreadsIcon;
-  const platformUrl = platform === "linkedin" ? linkedinUrl : threadsUrl;
+  const platformUrl =
+    platform === "linkedin" ? linkedinUrl || postDetail?.linkedinUrl : threadsUrl || postDetail?.threadsUrl;
 
   const linkedinTab = (
     <div className="linkedin-content space-y-4">

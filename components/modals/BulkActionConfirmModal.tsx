@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
-import type { Post } from "@/lib/types/post";
+import type { AdminPostListItem } from "@/lib/types/post";
 
 type BulkAction = "delete" | "publish" | "unpublish";
 
@@ -18,7 +18,7 @@ interface BulkActionConfirmModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   action: BulkAction | null;
-  selectedPosts: Post[];
+  selectedPosts: AdminPostListItem[];
   onConfirm: () => void;
   isPending: boolean;
 }

@@ -62,6 +62,29 @@ export interface PostPreview {
 }
 
 /**
+ * Post fields returned by the admin list endpoint.
+ * Full content and SNS copy are loaded only when a detail surface needs them.
+ */
+export interface AdminPostListItem {
+  id: string;
+  slug: string;
+  subSlug?: string | null;
+  title: string;
+  excerpt: string | null;
+  tags: string[];
+  type?: "LONG" | "SHORT";
+  published?: boolean;
+  createdAt: Date | string;
+  totalViews?: number;
+  dailyViews?: number;
+  linkedinUrl?: string | null;
+  threadsUrl?: string | null;
+  readingSessions?: number | null;
+  avgScrollDepth?: number | null;
+  completionRate?: number | null;
+}
+
+/**
  * Alias for Post used in home page contexts
  */
 export type HomePost = Post;

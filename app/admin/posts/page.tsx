@@ -43,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
-import type { Post, Series } from "@/lib/types/post";
+import type { AdminPostListItem, Series } from "@/lib/types/post";
 import { SlugEditModal } from "@/components/modals/SlugEditModal";
 import { BulkActionConfirmModal } from "@/components/modals/BulkActionConfirmModal";
 import { SocialMediaContentModal } from "@/components/modals/SocialMediaContentModal";
@@ -111,9 +111,9 @@ export default function AdminPostsPage() {
     [router]
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [postToDelete, setPostToDelete] = useState<AdminPostListItem | null>(null);
   const [slugEditModalOpen, setSlugEditModalOpen] = useState(false);
-  const [postToEditSlug, setPostToEditSlug] = useState<Post | null>(null);
+  const [postToEditSlug, setPostToEditSlug] = useState<AdminPostListItem | null>(null);
 
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [editingSeriesName, setEditingSeriesName] = useState("");
@@ -222,7 +222,7 @@ export default function AdminPostsPage() {
   const [snippetToDelete, setSnippetToDelete] = useState<CustomSnippet | null>(null);
 
   const [snsModalOpen, setSnsModalOpen] = useState(false);
-  const [snsModalPost, setSnsModalPost] = useState<Post | null>(null);
+  const [snsModalPost, setSnsModalPost] = useState<AdminPostListItem | null>(null);
   const [snsModalPlatform, setSnsModalPlatform] = useState<"linkedin" | "threads">("linkedin");
 
   const filters: AdminPostsFilters = useMemo(
@@ -321,12 +321,12 @@ export default function AdminPostsPage() {
     });
   }, [bulkAction, selectedPostIds, bulkActionMutation]);
 
-  const handleDeleteClick = (post: Post) => {
+  const handleDeleteClick = (post: AdminPostListItem) => {
     setPostToDelete(post);
     setDeleteDialogOpen(true);
   };
 
-  const handleSlugEditClick = (post: Post) => {
+  const handleSlugEditClick = (post: AdminPostListItem) => {
     setPostToEditSlug(post);
     setSlugEditModalOpen(true);
   };
@@ -485,7 +485,7 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleOpenSnsModal = (post: Post, platform: "linkedin" | "threads") => {
+  const handleOpenSnsModal = (post: AdminPostListItem, platform: "linkedin" | "threads") => {
     setSnsModalPost(post);
     setSnsModalPlatform(platform);
     setSnsModalOpen(true);
@@ -1406,12 +1406,16 @@ export default function AdminPostsPage() {
 
       {snsModalPost && (
         <SocialMediaContentModal
+          key={snsModalPost.id}
           open={snsModalOpen}
-          onOpenChange={setSnsModalOpen}
+          onOpenChange={(open) => {
+            setSnsModalOpen(open);
+            if (!open) {
+              setSnsModalPost(null);
+            }
+          }}
           postId={snsModalPost.id}
           platform={snsModalPlatform}
-          linkedinContent={snsModalPost.linkedinContent}
-          threadsContent={snsModalPost.threadsContent}
           linkedinUrl={snsModalPost.linkedinUrl}
           threadsUrl={snsModalPost.threadsUrl}
         />
