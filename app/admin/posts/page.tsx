@@ -47,6 +47,7 @@ import type { AdminPostListItem, Series } from "@/lib/types/post";
 import { SlugEditModal } from "@/components/modals/SlugEditModal";
 import { BulkActionConfirmModal } from "@/components/modals/BulkActionConfirmModal";
 import { SocialMediaContentModal } from "@/components/modals/SocialMediaContentModal";
+import { PostViewersModal } from "@/components/modals/PostViewersModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Highlight } from "@/components/ui/Highlight";
 import { useAdminPosts } from "@/hooks/useAdminPosts";
@@ -224,6 +225,8 @@ export default function AdminPostsPage() {
   const [snsModalOpen, setSnsModalOpen] = useState(false);
   const [snsModalPost, setSnsModalPost] = useState<AdminPostListItem | null>(null);
   const [snsModalPlatform, setSnsModalPlatform] = useState<"linkedin" | "threads">("linkedin");
+  const [viewersModalOpen, setViewersModalOpen] = useState(false);
+  const [viewersModalPost, setViewersModalPost] = useState<AdminPostListItem | null>(null);
 
   const filters: AdminPostsFilters = useMemo(
     () => ({
@@ -489,6 +492,11 @@ export default function AdminPostsPage() {
     setSnsModalPost(post);
     setSnsModalPlatform(platform);
     setSnsModalOpen(true);
+  };
+
+  const handleOpenViewersModal = (post: AdminPostListItem) => {
+    setViewersModalPost(post);
+    setViewersModalOpen(true);
   };
 
   return (
@@ -763,9 +771,15 @@ export default function AdminPostsPage() {
                           )}
                           <div className="post-card-meta flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                             <span>{formatDate(post.createdAt)}</span>
-                            <span className="px-2 py-0.5 bg-muted rounded whitespace-nowrap">
+                            <button
+                              type="button"
+                              className="rounded bg-muted px-2 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() => handleOpenViewersModal(post)}
+                              title="저장된 조회 IP 목록 보기"
+                              aria-label={`${post.title} 조회 IP 목록 보기`}
+                            >
                               오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회 {post.totalViews || 0}
-                            </span>
+                            </button>
                             {post.type === "LONG" && post.completionRate !== null && (
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded whitespace-nowrap">
                                 세션 완료율 {post.completionRate}% ({post.readingSessions}개 세션 레코드)
@@ -1418,6 +1432,23 @@ export default function AdminPostsPage() {
           platform={snsModalPlatform}
           linkedinUrl={snsModalPost.linkedinUrl}
           threadsUrl={snsModalPost.threadsUrl}
+        />
+      )}
+
+      {viewersModalPost && (
+        <PostViewersModal
+          key={viewersModalPost.id}
+          open={viewersModalOpen}
+          onOpenChange={(open) => {
+            setViewersModalOpen(open);
+            if (!open) {
+              setViewersModalPost(null);
+            }
+          }}
+          postId={viewersModalPost.id}
+          postTitle={viewersModalPost.title}
+          totalViews={viewersModalPost.totalViews ?? 0}
+          dailyViews={viewersModalPost.dailyViews ?? 0}
         />
       )}
     </div>
