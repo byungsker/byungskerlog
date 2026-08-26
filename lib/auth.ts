@@ -4,6 +4,7 @@ import { isAdminEmail } from "@/lib/auth-allowlist";
 interface AuthorizedUser {
   id: string;
   primaryEmail?: string | null;
+  primaryEmailVerified: boolean;
 }
 
 export async function getAuthUser() {
@@ -35,7 +36,9 @@ export function isAuthorizedAdmin(user: AuthorizedUser): boolean {
   // deployments may omit this optional variable, so use the same verified
   // Stack Auth email allowlist that controls the administrator UI as a
   // compatibility fallback instead of signing an administrator out.
-  return adminUserIds.length > 0 ? adminUserIds.includes(user.id) : isAdminEmail(user.primaryEmail);
+  return adminUserIds.length > 0
+    ? adminUserIds.includes(user.id)
+    : user.primaryEmailVerified === true && isAdminEmail(user.primaryEmail);
 }
 
 export async function getAuthUserWithAdminCheck() {

@@ -39,7 +39,17 @@ export function PostViewersModal({
   totalViews,
   dailyViews,
 }: PostViewersModalProps) {
-  const [page, setPage] = useState(1);
+  const paginationKey = `${postId}:${open ? "open" : "closed"}`;
+  const [paginationState, setPaginationState] = useState({ key: paginationKey, page: 1 });
+  const page = paginationState.key === paginationKey ? paginationState.page : 1;
+
+  const updatePage = (update: (currentPage: number) => number) => {
+    setPaginationState((current) => ({
+      key: paginationKey,
+      page: update(current.key === paginationKey ? current.page : 1),
+    }));
+  };
+
   const { data, isError, isLoading, isFetching } = usePostViewers(postId, page, { enabled: open });
 
   const totalPages = data?.pagination.totalPages ?? 1;
@@ -156,7 +166,7 @@ export function PostViewersModal({
               variant="outline"
               size="sm"
               aria-label="이전 페이지"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              onClick={() => updatePage((current) => Math.max(1, current - 1))}
               disabled={page <= 1 || isFetching}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -167,7 +177,7 @@ export function PostViewersModal({
               variant="outline"
               size="sm"
               aria-label="다음 페이지"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onClick={() => updatePage((current) => Math.min(totalPages, current + 1))}
               disabled={page >= totalPages || isFetching}
             >
               다음

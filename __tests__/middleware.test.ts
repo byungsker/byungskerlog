@@ -20,7 +20,11 @@ describe("관리자 페이지 미들웨어 인증", () => {
   });
 
   it("Preview에 관리자 ID 환경변수가 없어도 허용된 관리자 이메일을 유지한다", async () => {
-    mockGetUser.mockResolvedValue({ id: "preview-admin", primaryEmail: "admin@byungskerlog.com" });
+    mockGetUser.mockResolvedValue({
+      id: "preview-admin",
+      primaryEmail: "admin@byungskerlog.com",
+      primaryEmailVerified: true,
+    });
 
     const response = await middleware(new NextRequest("https://preview.example.com/admin/posts"));
 
