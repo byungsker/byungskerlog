@@ -41,6 +41,7 @@ describe("게시글 목록 조회 GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockPrisma.$queryRaw.mockResolvedValue([]);
+    mockPrisma.readingSession.groupBy.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
     mockIsAuthorizedAdmin.mockReset();
     mockRevalidateTag.mockReset();
@@ -113,6 +114,62 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     expect(response.status).toBe(200);
     expect(data.posts[0]).not.toHaveProperty("totalViews");
     expect(data.posts[0]).not.toHaveProperty("dailyViews");
+  });
+
+  it("관리자 목록은 화면에 필요한 필드와 집계 결과만 조회한다", async () => {
+    mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        subSlug: null,
+        title: "테스트 포스트",
+        excerpt: "발췌문",
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        linkedinUrl: null,
+        threadsUrl: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.groupBy
+      .mockResolvedValueOnce([
+        {
+          postId: "1",
+          _count: { _all: 4 },
+          _avg: { maxScrollDepth: 80 },
+        },
+      ])
+      .mockResolvedValueOnce([{ postId: "1", _count: { _all: 2 } }]);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+    const data = await response.json();
+    const select = vi.mocked(mockPrisma.post.findMany).mock.calls[0][0]?.select;
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).toMatchObject({
+      totalViews: 12,
+      dailyViews: 3,
+      readingSessions: 4,
+      avgScrollDepth: 80,
+      completionRate: 50,
+    });
+    expect(select).toEqual(
+      expect.objectContaining({
+        id: true,
+        title: true,
+        linkedinUrl: true,
+        threadsUrl: true,
+      })
+    );
+    expect(select).not.toHaveProperty("content");
+    expect(select).not.toHaveProperty("thumbnail");
+    expect(select).not.toHaveProperty("series");
+    expect(mockPrisma.readingSession.findMany).not.toHaveBeenCalled();
   });
 
   it("관리자 공개 목록 응답에는 조회수 통계를 포함한다", async () => {
@@ -193,6 +250,7 @@ describe("게시글 생성 POST /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockPrisma.$queryRaw.mockResolvedValue([]);
+    mockPrisma.readingSession.groupBy.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
     mockIsAuthorizedAdmin.mockReset();
   });

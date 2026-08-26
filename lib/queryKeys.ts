@@ -37,6 +37,7 @@ export const queryKeys = {
     details: () => [...queryKeys.posts.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.posts.details(), slug] as const,
     detailById: (id: string) => [...queryKeys.posts.details(), "id", id] as const,
+    viewers: (id: string, page: number) => [...queryKeys.posts.all, "viewers", id, page] as const,
     adminLists: () => [...queryKeys.posts.all, "admin"] as const,
     adminList: (filters: AdminPostsFilters) => [...queryKeys.posts.adminLists(), filters] as const,
   },

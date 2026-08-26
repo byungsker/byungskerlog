@@ -130,26 +130,30 @@ export function SocialMediaLinks({
 
       {postId && (
         <>
-          <SocialMediaContentModal
-            open={linkedinModalOpen}
-            onOpenChange={setLinkedinModalOpen}
-            postId={postId}
-            platform="linkedin"
-            linkedinContent={linkedinContent}
-            threadsContent={threadsContent}
-            linkedinUrl={linkedinUrl}
-            threadsUrl={threadsUrl}
-          />
-          <SocialMediaContentModal
-            open={threadsModalOpen}
-            onOpenChange={setThreadsModalOpen}
-            postId={postId}
-            platform="threads"
-            linkedinContent={linkedinContent}
-            threadsContent={threadsContent}
-            linkedinUrl={linkedinUrl}
-            threadsUrl={threadsUrl}
-          />
+          {linkedinModalOpen && (
+            <SocialMediaContentModal
+              open
+              onOpenChange={setLinkedinModalOpen}
+              postId={postId}
+              platform="linkedin"
+              linkedinContent={linkedinContent}
+              threadsContent={threadsContent}
+              linkedinUrl={linkedinUrl}
+              threadsUrl={threadsUrl}
+            />
+          )}
+          {threadsModalOpen && (
+            <SocialMediaContentModal
+              open
+              onOpenChange={setThreadsModalOpen}
+              postId={postId}
+              platform="threads"
+              linkedinContent={linkedinContent}
+              threadsContent={threadsContent}
+              linkedinUrl={linkedinUrl}
+              threadsUrl={threadsUrl}
+            />
+          )}
         </>
       )}
     </>

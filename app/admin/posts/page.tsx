@@ -43,10 +43,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
-import type { Post, Series } from "@/lib/types/post";
+import type { AdminPostListItem, Series } from "@/lib/types/post";
 import { SlugEditModal } from "@/components/modals/SlugEditModal";
 import { BulkActionConfirmModal } from "@/components/modals/BulkActionConfirmModal";
 import { SocialMediaContentModal } from "@/components/modals/SocialMediaContentModal";
+import { PostViewersModal } from "@/components/modals/PostViewersModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Highlight } from "@/components/ui/Highlight";
 import { useAdminPosts } from "@/hooks/useAdminPosts";
@@ -111,9 +112,9 @@ export default function AdminPostsPage() {
     [router]
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [postToDelete, setPostToDelete] = useState<AdminPostListItem | null>(null);
   const [slugEditModalOpen, setSlugEditModalOpen] = useState(false);
-  const [postToEditSlug, setPostToEditSlug] = useState<Post | null>(null);
+  const [postToEditSlug, setPostToEditSlug] = useState<AdminPostListItem | null>(null);
 
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [editingSeriesName, setEditingSeriesName] = useState("");
@@ -222,8 +223,10 @@ export default function AdminPostsPage() {
   const [snippetToDelete, setSnippetToDelete] = useState<CustomSnippet | null>(null);
 
   const [snsModalOpen, setSnsModalOpen] = useState(false);
-  const [snsModalPost, setSnsModalPost] = useState<Post | null>(null);
+  const [snsModalPost, setSnsModalPost] = useState<AdminPostListItem | null>(null);
   const [snsModalPlatform, setSnsModalPlatform] = useState<"linkedin" | "threads">("linkedin");
+  const [viewersModalOpen, setViewersModalOpen] = useState(false);
+  const [viewersModalPost, setViewersModalPost] = useState<AdminPostListItem | null>(null);
 
   const filters: AdminPostsFilters = useMemo(
     () => ({
@@ -321,12 +324,12 @@ export default function AdminPostsPage() {
     });
   }, [bulkAction, selectedPostIds, bulkActionMutation]);
 
-  const handleDeleteClick = (post: Post) => {
+  const handleDeleteClick = (post: AdminPostListItem) => {
     setPostToDelete(post);
     setDeleteDialogOpen(true);
   };
 
-  const handleSlugEditClick = (post: Post) => {
+  const handleSlugEditClick = (post: AdminPostListItem) => {
     setPostToEditSlug(post);
     setSlugEditModalOpen(true);
   };
@@ -485,10 +488,15 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleOpenSnsModal = (post: Post, platform: "linkedin" | "threads") => {
+  const handleOpenSnsModal = (post: AdminPostListItem, platform: "linkedin" | "threads") => {
     setSnsModalPost(post);
     setSnsModalPlatform(platform);
     setSnsModalOpen(true);
+  };
+
+  const handleOpenViewersModal = (post: AdminPostListItem) => {
+    setViewersModalPost(post);
+    setViewersModalOpen(true);
   };
 
   return (
@@ -763,9 +771,16 @@ export default function AdminPostsPage() {
                           )}
                           <div className="post-card-meta flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                             <span>{formatDate(post.createdAt)}</span>
-                            <span className="px-2 py-0.5 bg-muted rounded whitespace-nowrap">
-                              오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회 {post.totalViews || 0}
-                            </span>
+                            <button
+                              type="button"
+                              className="rounded bg-muted px-2 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() => handleOpenViewersModal(post)}
+                              title="조회 기록 상세 보기"
+                              aria-label={`${post.title} 조회 기록 상세 보기`}
+                            >
+                              오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회{" "}
+                              {post.totalViews || 0}
+                            </button>
                             {post.type === "LONG" && post.completionRate !== null && (
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded whitespace-nowrap">
                                 세션 완료율 {post.completionRate}% ({post.readingSessions}개 세션 레코드)
@@ -1406,14 +1421,35 @@ export default function AdminPostsPage() {
 
       {snsModalPost && (
         <SocialMediaContentModal
+          key={snsModalPost.id}
           open={snsModalOpen}
-          onOpenChange={setSnsModalOpen}
+          onOpenChange={(open) => {
+            setSnsModalOpen(open);
+            if (!open) {
+              setSnsModalPost(null);
+            }
+          }}
           postId={snsModalPost.id}
           platform={snsModalPlatform}
-          linkedinContent={snsModalPost.linkedinContent}
-          threadsContent={snsModalPost.threadsContent}
           linkedinUrl={snsModalPost.linkedinUrl}
           threadsUrl={snsModalPost.threadsUrl}
+        />
+      )}
+
+      {viewersModalPost && (
+        <PostViewersModal
+          key={viewersModalPost.id}
+          open={viewersModalOpen}
+          onOpenChange={(open) => {
+            setViewersModalOpen(open);
+            if (!open) {
+              setViewersModalPost(null);
+            }
+          }}
+          postId={viewersModalPost.id}
+          postTitle={viewersModalPost.title}
+          totalViews={viewersModalPost.totalViews ?? 0}
+          dailyViews={viewersModalPost.dailyViews ?? 0}
         />
       )}
     </div>

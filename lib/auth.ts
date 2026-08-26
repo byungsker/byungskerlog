@@ -1,7 +1,10 @@
 import { stackServerApp } from "@/stack/server";
+import { isAdminEmail } from "@/lib/auth-allowlist";
 
 interface AuthorizedUser {
   id: string;
+  primaryEmail?: string | null;
+  primaryEmailVerified: boolean;
 }
 
 export async function getAuthUser() {
@@ -24,7 +27,18 @@ export function isAdminUser(userId: string): boolean {
 }
 
 export function isAuthorizedAdmin(user: AuthorizedUser): boolean {
-  return isAdminUser(user.id);
+  const adminUserIds =
+    process.env.ADMIN_USER_IDS?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean) || [];
+
+  // Keep the configured immutable IDs authoritative when present. Preview
+  // deployments may omit this optional variable, so use the same verified
+  // Stack Auth email allowlist that controls the administrator UI as a
+  // compatibility fallback instead of signing an administrator out.
+  return adminUserIds.length > 0
+    ? adminUserIds.includes(user.id)
+    : user.primaryEmailVerified === true && isAdminEmail(user.primaryEmail);
 }
 
 export async function getAuthUserWithAdminCheck() {

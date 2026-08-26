@@ -227,37 +227,56 @@ export async function GET(request: NextRequest) {
       where.OR = orConditions;
     }
 
-    const total = await prisma.post.count({ where });
-
-    const postsRaw = await prisma.post.findMany({
-      where,
-      orderBy: { createdAt: sortBy === "asc" ? "asc" : "desc" },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        slug: true,
-        subSlug: true,
-        title: true,
-        excerpt: true,
-        content: true,
-        thumbnail: true,
-        tags: {
-          select: { name: true },
-        },
-        type: true,
-        published: true,
-        createdAt: true,
-        updatedAt: true,
-        series: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+    const publicPostSelect = {
+      id: true,
+      slug: true,
+      subSlug: true,
+      title: true,
+      excerpt: true,
+      content: true,
+      thumbnail: true,
+      tags: {
+        select: { name: true },
+      },
+      type: true,
+      published: true,
+      createdAt: true,
+      updatedAt: true,
+      series: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
         },
       },
-    });
+    } as const;
+
+    const adminPostSelect = {
+      id: true,
+      slug: true,
+      subSlug: true,
+      title: true,
+      excerpt: true,
+      tags: {
+        select: { name: true },
+      },
+      type: true,
+      published: true,
+      createdAt: true,
+      linkedinUrl: true,
+      threadsUrl: true,
+    } as const;
+
+    const [total, postsRaw] = await Promise.all([
+      prisma.post.count({ where }),
+      prisma.post.findMany({
+        where,
+        orderBy: { createdAt: sortBy === "asc" ? "asc" : "desc" },
+        skip,
+        take: limit,
+        select: includeUnpublished ? adminPostSelect : publicPostSelect,
+      }),
+    ]);
 
     const posts = postsRaw.map((post) => ({
       ...post,
@@ -280,32 +299,33 @@ export async function GET(request: NextRequest) {
     let readingStats: Record<string, { sessions: number; totalDepth: number; completed: number }> = {};
 
     try {
-      const readingSessions =
-        longPostIds.length > 0
-          ? await prisma.readingSession.findMany({
-              where: { postId: { in: longPostIds } },
-              select: {
-                postId: true,
-                maxScrollDepth: true,
-                completed: true,
-              },
-            })
-          : [];
+      if (longPostIds.length > 0) {
+        const [sessionStats, completedStats] = await Promise.all([
+          prisma.readingSession.groupBy({
+            by: ["postId"],
+            where: { postId: { in: longPostIds } },
+            _count: { _all: true },
+            _avg: { maxScrollDepth: true },
+          }),
+          prisma.readingSession.groupBy({
+            by: ["postId"],
+            where: { postId: { in: longPostIds }, completed: true },
+            _count: { _all: true },
+          }),
+        ]);
 
-      readingStats = readingSessions.reduce(
-        (acc, session) => {
-          if (!acc[session.postId]) {
-            acc[session.postId] = { sessions: 0, totalDepth: 0, completed: 0 };
-          }
-          acc[session.postId].sessions++;
-          acc[session.postId].totalDepth += session.maxScrollDepth;
-          if (session.completed) {
-            acc[session.postId].completed++;
-          }
-          return acc;
-        },
-        {} as Record<string, { sessions: number; totalDepth: number; completed: number }>
-      );
+        const completedByPost = new Map(completedStats.map((row) => [row.postId, row._count._all]));
+        readingStats = Object.fromEntries(
+          sessionStats.map((row) => [
+            row.postId,
+            {
+              sessions: row._count._all,
+              totalDepth: (row._avg.maxScrollDepth ?? 0) * row._count._all,
+              completed: completedByPost.get(row.postId) ?? 0,
+            },
+          ])
+        );
+      }
     } catch (readingError) {
       console.error("Error fetching reading sessions:", readingError);
     }

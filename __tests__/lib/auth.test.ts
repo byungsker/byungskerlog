@@ -12,22 +12,42 @@ describe("관리자 권한 판별", () => {
   it("서버가 관리하는 불변 사용자 ID만 허용한다", () => {
     vi.stubEnv("ADMIN_USER_IDS", "admin-user-id, other-admin-id");
 
-    expect(isAuthorizedAdmin({ id: "admin-user-id" })).toBe(true);
+    expect(isAuthorizedAdmin({ id: "admin-user-id", primaryEmailVerified: false })).toBe(true);
   });
 
-  it("관리자 이메일을 주장하더라도 다른 사용자 ID는 거부한다", () => {
+  it("관리자 ID 환경설정이 있으면 관리자 이메일만으로 우회할 수 없다", () => {
     vi.stubEnv("ADMIN_USER_IDS", "admin-user-id");
     const attacker = {
       id: "attacker-id",
       primaryEmail: "admin@byungskerlog.com",
+      primaryEmailVerified: false,
     };
 
     expect(isAuthorizedAdmin(attacker)).toBe(false);
   });
 
-  it("관리자 ID 환경설정이 없으면 모든 사용자를 거부한다", () => {
+  it("관리자 ID 환경설정이 없는 프리뷰에서는 검증된 허용 관리자 이메일을 사용한다", () => {
     vi.stubEnv("ADMIN_USER_IDS", "");
 
-    expect(isAuthorizedAdmin({ id: "admin-user-id" })).toBe(false);
+    expect(
+      isAuthorizedAdmin({
+        id: "admin-user-id",
+        primaryEmail: "ADMIN@BYUNGSKERLOG.COM",
+        primaryEmailVerified: true,
+      })
+    ).toBe(true);
+    expect(
+      isAuthorizedAdmin({
+        id: "unverified-admin-id",
+        primaryEmail: "admin@byungskerlog.com",
+        primaryEmailVerified: false,
+      })
+    ).toBe(false);
+    expect(
+      isAuthorizedAdmin({ id: "member-id", primaryEmail: "tester@byungskerlog.com", primaryEmailVerified: true })
+    ).toBe(false);
+    expect(
+      isAuthorizedAdmin({ id: "unknown-id", primaryEmail: "unknown@example.com", primaryEmailVerified: true })
+    ).toBe(false);
   });
 });

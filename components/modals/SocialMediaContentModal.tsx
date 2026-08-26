@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { X, Copy, Maximize2, Minimize2, ExternalLink, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useUpdatePost } from "@/hooks/usePostMutations";
+import { usePost } from "@/hooks/usePost";
 import { cn } from "@/lib/utils";
 
 const LINKEDIN_CHAR_LIMIT = 3000;
@@ -69,11 +70,21 @@ export function SocialMediaContentModal({
   onUpdate,
 }: SocialMediaContentModalProps) {
   const isMobile = useIsMobile();
+  const {
+    data: postDetail,
+    isLoading: isPostDetailLoading,
+    isError: isPostDetailError,
+  } = usePost(postId, {
+    enabled: open,
+  });
   const [isFullView, setIsFullView] = useState(false);
-  const [linkedinContent, setLinkedinContent] = useState(initialLinkedinContent || "");
-  const [threadsContent, setThreadsContent] = useState<string[]>(initialThreadsContent || [""]);
+  const [linkedinContentOverride, setLinkedinContentOverride] = useState<string | undefined>();
+  const [threadsContentOverride, setThreadsContentOverride] = useState<string[] | undefined>();
   const [hasChanges, setHasChanges] = useState(false);
-  const [lastOpenState, setLastOpenState] = useState(false);
+
+  const linkedinContent = linkedinContentOverride ?? postDetail?.linkedinContent ?? initialLinkedinContent ?? "";
+  const threadsContent = threadsContentOverride ?? postDetail?.threadsContent ?? initialThreadsContent ?? [""];
+  const isContentReady = Boolean(postDetail) && !isPostDetailLoading && !isPostDetailError;
 
   const updatePostMutation = useUpdatePost({
     showToast: false,
@@ -87,25 +98,15 @@ export function SocialMediaContentModal({
     },
   });
 
-  if (open && !lastOpenState) {
-    setLinkedinContent(initialLinkedinContent || "");
-    setThreadsContent(initialThreadsContent || [""]);
-    setHasChanges(false);
-    setIsFullView(false);
-    setLastOpenState(true);
-  } else if (!open && lastOpenState) {
-    setLastOpenState(false);
-  }
-
   const handleLinkedinChange = (value: string) => {
-    setLinkedinContent(value);
+    setLinkedinContentOverride(value);
     setHasChanges(true);
   };
 
   const handleThreadsChange = (index: number, value: string) => {
     const newContent = [...threadsContent];
     newContent[index] = value;
-    setThreadsContent(newContent);
+    setThreadsContentOverride(newContent);
     setHasChanges(true);
   };
 
@@ -127,10 +128,19 @@ export function SocialMediaContentModal({
   const handleOpenThreads = () => {
     navigator.clipboard.writeText(threadsContent[0] || "");
     toast.success("첫 번째 Threads 포스트가 복사되었습니다.");
-    window.open(threadsUrl || "https://www.threads.com/@byungsker_letter", "_blank");
+    window.open(
+      threadsUrl || postDetail?.threadsUrl || "https://www.threads.com/@byungsker_letter",
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   const handleSave = () => {
+    if (!isContentReady) {
+      toast.error("포스트 상세 콘텐츠를 불러오는 중입니다.");
+      return;
+    }
+
     updatePostMutation.mutate({
       id: postId,
       data: {
@@ -152,7 +162,8 @@ export function SocialMediaContentModal({
 
   const platformLabel = platform === "linkedin" ? "LinkedIn" : "Threads";
   const PlatformIcon = platform === "linkedin" ? LinkedInIcon : ThreadsIcon;
-  const platformUrl = platform === "linkedin" ? linkedinUrl : threadsUrl;
+  const platformUrl =
+    platform === "linkedin" ? linkedinUrl || postDetail?.linkedinUrl : threadsUrl || postDetail?.threadsUrl;
 
   const linkedinTab = (
     <div className="linkedin-content space-y-4">
@@ -189,7 +200,7 @@ export function SocialMediaContentModal({
             "resize-none transition-all duration-200 pr-10",
             isFullView ? "h-[calc(100dvh-280px)]" : "h-[300px]"
           )}
-          disabled={updatePostMutation.isPending}
+          disabled={updatePostMutation.isPending || !isContentReady}
         />
         {!isMobile && (
           <button
@@ -258,7 +269,7 @@ export function SocialMediaContentModal({
                   onChange={(e) => handleThreadsChange(index, e.target.value)}
                   placeholder={`Threads 포스트 ${index + 1}...`}
                   className={cn("resize-none pr-10", isFullView ? "h-[calc(100dvh-400px)]" : "h-[120px]")}
-                  disabled={updatePostMutation.isPending}
+                  disabled={updatePostMutation.isPending || !isContentReady}
                 />
                 {!isMobile && (
                   <button
@@ -303,7 +314,7 @@ export function SocialMediaContentModal({
         variant="default"
         size="sm"
         onClick={handleSave}
-        disabled={!hasChanges || updatePostMutation.isPending}
+        disabled={!hasChanges || !isContentReady || updatePostMutation.isPending}
         className="gap-2"
       >
         <Save className="h-4 w-4" />
@@ -353,7 +364,19 @@ export function SocialMediaContentModal({
               </header>
 
               <main className="sns-content-modal-content flex-1 overflow-y-auto px-4 pb-24">
-                <div className="space-y-4 py-4">{modalContent}</div>
+                <div className="space-y-4 py-4">
+                  {!isContentReady && (
+                    <div
+                      className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+                      role="status"
+                    >
+                      {isPostDetailError
+                        ? "포스트 상세 콘텐츠를 불러오지 못했습니다."
+                        : "포스트 상세 콘텐츠를 불러오는 중입니다."}
+                    </div>
+                  )}
+                  {modalContent}
+                </div>
               </main>
 
               <footer className="sns-content-modal-footer fixed bottom-0 left-0 right-0 p-4 border-t bg-background safe-area-bottom">
@@ -388,6 +411,16 @@ export function SocialMediaContentModal({
           </div>
         </DialogHeader>
 
+        {!isContentReady && (
+          <div
+            className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+            role="status"
+          >
+            {isPostDetailError
+              ? "포스트 상세 콘텐츠를 불러오지 못했습니다."
+              : "포스트 상세 콘텐츠를 불러오는 중입니다."}
+          </div>
+        )}
         <div className="space-y-4">{modalContent}</div>
 
         <DialogFooter className="flex justify-end gap-2">{footerButtons}</DialogFooter>
