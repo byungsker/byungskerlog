@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api/client";
 import { queryKeys } from "@/lib/queryKeys";
 import type { PostViewersData } from "@/lib/types/post-view";
 
-export const POST_VIEW_IP_PAGE_SIZE = 50;
+export const POST_VIEW_RECORD_PAGE_SIZE = 50;
 
 interface UsePostViewersOptions {
   enabled?: boolean;
@@ -18,7 +18,7 @@ export function usePostViewers(postId: string, page: number, options: UsePostVie
     queryKey: queryKeys.posts.viewers(postId, page),
     queryFn: () =>
       apiClient.get<PostViewersData>(
-        `/api/posts/${encodeURIComponent(postId)}/viewers?page=${page}&limit=${POST_VIEW_IP_PAGE_SIZE}`
+        `/api/posts/${encodeURIComponent(postId)}/viewers?page=${page}&limit=${POST_VIEW_RECORD_PAGE_SIZE}`
       ),
     staleTime: 30 * 1000,
     enabled: Boolean(postId) && enabled,

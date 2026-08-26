@@ -22,7 +22,7 @@ function createRequest(path: string): NextRequest {
   return new NextRequest(new URL(path, "http://localhost:3000"));
 }
 
-describe("관리자 게시글 조회 IP GET /api/posts/[id]/viewers", () => {
+describe("관리자 게시글 조회 기록 GET /api/posts/[id]/viewers", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
@@ -52,7 +52,7 @@ describe("관리자 게시글 조회 IP GET /api/posts/[id]/viewers", () => {
     expect(mockPrisma.post.findUnique).not.toHaveBeenCalled();
   });
 
-  it("관리자에게 IP 집계만 반환하고 visitorId와 user-agent는 노출하지 않는다", async () => {
+  it("관리자에게 조회 기록별 IP, visitorId, user-agent 원문을 반환한다", async () => {
     mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
     mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.findUnique.mockResolvedValue({ id: "post-1", title: "테스트 포스트" });
@@ -68,9 +68,15 @@ describe("관리자 게시글 조회 IP GET /api/posts/[id]/viewers", () => {
       .mockResolvedValueOnce([
         {
           ipAddress: "203.0.113.7",
-          viewCount: 3,
-          firstSeen: new Date("2026-08-26T00:00:00.000Z"),
-          lastSeen: new Date("2026-08-26T01:00:00.000Z"),
+          visitorId: "visitor-1",
+          userAgent: "Mozilla/5.0 (Test Browser)",
+          viewedAt: new Date("2026-08-26T01:00:00.000Z"),
+        },
+        {
+          ipAddress: null,
+          visitorId: "visitor-2",
+          userAgent: "unknown",
+          viewedAt: new Date("2026-08-26T00:00:00.000Z"),
         },
       ]);
 
@@ -87,16 +93,22 @@ describe("관리자 게시글 조회 IP GET /api/posts/[id]/viewers", () => {
       viewRecordsWithIp: 4,
       viewRecordsWithoutIp: 1,
     });
-    expect(data.ips).toEqual([
+    expect(data.records).toEqual([
       {
         ipAddress: "203.0.113.7",
-        viewCount: 3,
-        firstSeen: "2026-08-26T00:00:00.000Z",
-        lastSeen: "2026-08-26T01:00:00.000Z",
+        visitorId: "visitor-1",
+        userAgent: "Mozilla/5.0 (Test Browser)",
+        viewedAt: "2026-08-26T01:00:00.000Z",
+      },
+      {
+        ipAddress: null,
+        visitorId: "visitor-2",
+        userAgent: "unknown",
+        viewedAt: "2026-08-26T00:00:00.000Z",
       },
     ]);
-    expect(data.ips[0]).not.toHaveProperty("visitorId");
-    expect(data.ips[0]).not.toHaveProperty("userAgent");
-    expect(data.pagination).toMatchObject({ page: 1, limit: 50, total: 2, totalPages: 1 });
+    expect(data.records[0]).toMatchObject({ visitorId: "visitor-1", userAgent: "Mozilla/5.0 (Test Browser)" });
+    expect(data.pagination).toMatchObject({ page: 1, limit: 50, total: 5, totalPages: 1 });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 });

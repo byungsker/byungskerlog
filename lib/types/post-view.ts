@@ -1,8 +1,8 @@
-export interface PostViewIpEntry {
-  ipAddress: string;
-  viewCount: number;
-  firstSeen: string;
-  lastSeen: string;
+export interface PostViewRecord {
+  ipAddress: string | null;
+  visitorId: string | null;
+  userAgent: string | null;
+  viewedAt: string;
 }
 
 export interface PostViewersData {
@@ -17,7 +17,7 @@ export interface PostViewersData {
     viewRecordsWithIp: number;
     viewRecordsWithoutIp: number;
   };
-  ips: PostViewIpEntry[];
+  records: PostViewRecord[];
   pagination: {
     page: number;
     limit: number;

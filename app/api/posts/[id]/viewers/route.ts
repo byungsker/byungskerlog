@@ -8,6 +8,8 @@ import { validVisitorIdentitySql, visitorIdentitySql } from "@/lib/analytics/pos
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
+export const dynamic = "force-dynamic";
+
 interface ViewSummaryRow {
   uniqueVisitorCount: bigint | number;
   uniqueIpCount: bigint | number;
@@ -15,11 +17,11 @@ interface ViewSummaryRow {
   viewRecordsWithIp: bigint | number;
 }
 
-interface ViewIpRow {
-  ipAddress: string;
-  viewCount: bigint | number;
-  firstSeen: Date | string;
-  lastSeen: Date | string;
+interface ViewRecordRow {
+  ipAddress: string | null;
+  visitorId: string | null;
+  userAgent: string | null;
+  viewedAt: Date | string;
 }
 
 function toCount(value: bigint | number): number {
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       throw ApiError.notFound("Post");
     }
 
-    const [summaryRows, ipRows] = await Promise.all([
+    const [summaryRows, recordRows] = await Promise.all([
       prisma.$queryRaw<ViewSummaryRow[]>`
         SELECT
           COUNT(DISTINCT ${visitorIdentitySql}) FILTER (WHERE ${validVisitorIdentitySql})::int AS "uniqueVisitorCount",
@@ -77,17 +79,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         FROM "PostView"
         WHERE "postId" = ${id}
       `,
-      prisma.$queryRaw<ViewIpRow[]>`
+      prisma.$queryRaw<ViewRecordRow[]>`
         SELECT
-          TRIM("ipAddress") AS "ipAddress",
-          COUNT(*)::int AS "viewCount",
-          MIN("viewedAt") AS "firstSeen",
-          MAX("viewedAt") AS "lastSeen"
+          NULLIF(TRIM("ipAddress"), '') AS "ipAddress",
+          NULLIF(TRIM("visitorId"), '') AS "visitorId",
+          NULLIF("userAgent", '') AS "userAgent",
+          "viewedAt"
         FROM "PostView"
         WHERE "postId" = ${id}
-          AND ${validIpSql}
-        GROUP BY TRIM("ipAddress")
-        ORDER BY MAX("viewedAt") DESC
+        ORDER BY "viewedAt" DESC
         LIMIT ${limit}
         OFFSET ${skip}
       `,
@@ -99,32 +99,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       viewRecords: 0,
       viewRecordsWithIp: 0,
     };
-    const uniqueIpCount = toCount(summary.uniqueIpCount);
-    const totalPages = Math.max(1, Math.ceil(uniqueIpCount / limit));
+    const viewRecords = toCount(summary.viewRecords);
+    const totalPages = Math.max(1, Math.ceil(viewRecords / limit));
 
-    return NextResponse.json({
-      post,
-      summary: {
-        uniqueVisitorCount: toCount(summary.uniqueVisitorCount),
-        uniqueIpCount,
-        viewRecords: toCount(summary.viewRecords),
-        viewRecordsWithIp: toCount(summary.viewRecordsWithIp),
-        viewRecordsWithoutIp: Math.max(0, toCount(summary.viewRecords) - toCount(summary.viewRecordsWithIp)),
+    return NextResponse.json(
+      {
+        post,
+        summary: {
+          uniqueVisitorCount: toCount(summary.uniqueVisitorCount),
+          uniqueIpCount: toCount(summary.uniqueIpCount),
+          viewRecords,
+          viewRecordsWithIp: toCount(summary.viewRecordsWithIp),
+          viewRecordsWithoutIp: Math.max(0, viewRecords - toCount(summary.viewRecordsWithIp)),
+        },
+        records: recordRows.map((row) => ({
+          ipAddress: row.ipAddress,
+          visitorId: row.visitorId,
+          userAgent: row.userAgent,
+          viewedAt: toIsoString(row.viewedAt),
+        })),
+        pagination: {
+          page,
+          limit,
+          total: viewRecords,
+          totalPages,
+        },
       },
-      ips: ipRows.map((row) => ({
-        ipAddress: row.ipAddress,
-        viewCount: toCount(row.viewCount),
-        firstSeen: toIsoString(row.firstSeen),
-        lastSeen: toIsoString(row.lastSeen),
-      })),
-      pagination: {
-        page,
-        limit,
-        total: uniqueIpCount,
-        totalPages,
-      },
-    });
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (error) {
-    return handleApiError(error, "Failed to fetch post viewer IPs");
+    return handleApiError(error, "Failed to fetch post viewer records");
   }
 }

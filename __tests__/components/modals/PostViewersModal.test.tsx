@@ -4,14 +4,14 @@ import { PostViewersModal } from "@/components/modals/PostViewersModal";
 import { usePostViewers } from "@/hooks/usePostViewers";
 
 vi.mock("@/hooks/usePostViewers", () => ({
-  POST_VIEW_IP_PAGE_SIZE: 50,
+  POST_VIEW_RECORD_PAGE_SIZE: 50,
   usePostViewers: vi.fn(),
 }));
 
 const mockUsePostViewers = vi.mocked(usePostViewers);
 
 describe("PostViewersModal", () => {
-  it("관리자용 조회 IP와 개인정보 경계 안내를 표시한다", () => {
+  it("관리자용 조회 기록과 visitorId·user-agent 원문을 표시한다", () => {
     mockUsePostViewers.mockReturnValue({
       data: {
         post: { id: "post-1", title: "테스트 포스트" },
@@ -22,12 +22,12 @@ describe("PostViewersModal", () => {
           viewRecordsWithIp: 4,
           viewRecordsWithoutIp: 0,
         },
-        ips: [
+        records: [
           {
             ipAddress: "203.0.113.7",
-            viewCount: 4,
-            firstSeen: "2026-08-26T00:00:00.000Z",
-            lastSeen: "2026-08-26T01:00:00.000Z",
+            visitorId: "visitor-1",
+            userAgent: "Mozilla/5.0 (Test Browser)",
+            viewedAt: "2026-08-26T01:00:00.000Z",
           },
         ],
         pagination: { page: 1, limit: 50, total: 1, totalPages: 1 },
@@ -48,9 +48,11 @@ describe("PostViewersModal", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "조회 IP 목록" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "조회 기록 상세" })).toBeInTheDocument();
     expect(screen.getByText("203.0.113.7")).toBeInTheDocument();
+    expect(screen.getByText("visitor-1")).toBeInTheDocument();
+    expect(screen.getByText("Mozilla/5.0 (Test Browser)")).toBeInTheDocument();
     expect(screen.getByText(/visitorId 우선 distinct 집계/)).toBeInTheDocument();
-    expect(screen.getByText(/IP는 보조 확인 정보/)).toBeInTheDocument();
+    expect(screen.getByText(/PostView에 저장된 원문/)).toBeInTheDocument();
   });
 });

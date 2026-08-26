@@ -775,10 +775,11 @@ export default function AdminPostsPage() {
                               type="button"
                               className="rounded bg-muted px-2 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               onClick={() => handleOpenViewersModal(post)}
-                              title="저장된 조회 IP 목록 보기"
-                              aria-label={`${post.title} 조회 IP 목록 보기`}
+                              title="조회 기록 상세 보기"
+                              aria-label={`${post.title} 조회 기록 상세 보기`}
                             >
-                              오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회 {post.totalViews || 0}
+                              오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회{" "}
+                              {post.totalViews || 0}
                             </button>
                             {post.type === "LONG" && post.completionRate !== null && (
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded whitespace-nowrap">
