@@ -111,4 +111,29 @@ describe("관리자 게시글 조회 기록 GET /api/posts/[id]/viewers", () => 
     expect(data.pagination).toMatchObject({ page: 1, limit: 50, total: 5, totalPages: 1 });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
+
+  it("범위를 벗어난 페이지는 마지막 페이지로 보정하고 limit을 제한한다", async () => {
+    mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.findUnique.mockResolvedValue({ id: "post-1", title: "테스트 포스트" });
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([
+        {
+          uniqueVisitorCount: 5,
+          uniqueIpCount: 4,
+          viewRecords: 5,
+          viewRecordsWithIp: 5,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const response = await GET(createRequest("/api/posts/post-1/viewers?page=999&limit=9999"), {
+      params: Promise.resolve({ id: "post-1" }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.pagination).toMatchObject({ page: 1, limit: 100, total: 5, totalPages: 1 });
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+  });
 });

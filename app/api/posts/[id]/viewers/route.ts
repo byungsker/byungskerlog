@@ -52,9 +52,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
-    const page = parsePositiveInteger(searchParams.get("page"), 1);
+    const requestedPage = parsePositiveInteger(searchParams.get("page"), 1);
     const limit = parsePositiveInteger(searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
-    const skip = (page - 1) * limit;
     const validIpSql = Prisma.sql`
       NULLIF(TRIM("ipAddress"), '') IS NOT NULL
       AND TRIM("ipAddress") <> 'unknown'
@@ -69,29 +68,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       throw ApiError.notFound("Post");
     }
 
-    const [summaryRows, recordRows] = await Promise.all([
-      prisma.$queryRaw<ViewSummaryRow[]>`
-        SELECT
-          COUNT(DISTINCT ${visitorIdentitySql}) FILTER (WHERE ${validVisitorIdentitySql})::int AS "uniqueVisitorCount",
-          COUNT(DISTINCT TRIM("ipAddress")) FILTER (WHERE ${validIpSql})::int AS "uniqueIpCount",
-          COUNT(*)::int AS "viewRecords",
-          COUNT(*) FILTER (WHERE ${validIpSql})::int AS "viewRecordsWithIp"
-        FROM "PostView"
-        WHERE "postId" = ${id}
-      `,
-      prisma.$queryRaw<ViewRecordRow[]>`
-        SELECT
-          NULLIF(TRIM("ipAddress"), '') AS "ipAddress",
-          NULLIF(TRIM("visitorId"), '') AS "visitorId",
-          NULLIF("userAgent", '') AS "userAgent",
-          "viewedAt"
-        FROM "PostView"
-        WHERE "postId" = ${id}
-        ORDER BY "viewedAt" DESC
-        LIMIT ${limit}
-        OFFSET ${skip}
-      `,
-    ]);
+    const summaryRows = await prisma.$queryRaw<ViewSummaryRow[]>`
+      SELECT
+        COUNT(DISTINCT ${visitorIdentitySql}) FILTER (WHERE ${validVisitorIdentitySql})::int AS "uniqueVisitorCount",
+        COUNT(DISTINCT TRIM("ipAddress")) FILTER (WHERE ${validIpSql})::int AS "uniqueIpCount",
+        COUNT(*)::int AS "viewRecords",
+        COUNT(*) FILTER (WHERE ${validIpSql})::int AS "viewRecordsWithIp"
+      FROM "PostView"
+      WHERE "postId" = ${id}
+    `;
 
     const summary = summaryRows[0] ?? {
       uniqueVisitorCount: 0,
@@ -101,6 +86,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     };
     const viewRecords = toCount(summary.viewRecords);
     const totalPages = Math.max(1, Math.ceil(viewRecords / limit));
+    const page = Math.min(requestedPage, totalPages);
+    const skip = (page - 1) * limit;
+    const recordRows = await prisma.$queryRaw<ViewRecordRow[]>`
+      SELECT
+        NULLIF(TRIM("ipAddress"), '') AS "ipAddress",
+        NULLIF(TRIM("visitorId"), '') AS "visitorId",
+        NULLIF("userAgent", '') AS "userAgent",
+        "viewedAt"
+      FROM "PostView"
+      WHERE "postId" = ${id}
+      ORDER BY "viewedAt" DESC
+      LIMIT ${limit}
+      OFFSET ${skip}
+    `;
 
     return NextResponse.json(
       {
