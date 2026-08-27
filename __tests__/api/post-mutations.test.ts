@@ -148,12 +148,16 @@ describe("게시글 변경 권한", () => {
   it("관리자 게시글 삭제 후 sitemap과 RSS 캐시를 무효화한다", async () => {
     mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
     mockIsAuthorizedAdmin.mockReturnValue(true);
-    mockPrisma.post.findUnique.mockResolvedValue({ slug: "deleted-post" });
+    mockPrisma.post.findUnique.mockResolvedValue({ slug: "deleted-post", subSlug: "deleted-alias" });
     mockPrisma.post.delete.mockResolvedValue({});
 
     const response = await DELETE(new NextRequest("http://localhost/api/posts/post-1", { method: "DELETE" }), params);
 
     expect(response.status).toBe(200);
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/posts/deleted-post");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/posts/deleted-alias");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/short/deleted-post");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/short/deleted-alias");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
   });
