@@ -1,4 +1,4 @@
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 interface FAQItem {
   question: string;

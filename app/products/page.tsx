@@ -1,8 +1,7 @@
 import { ProductCard } from "@/components/common/ProductCard";
 import { Globe, Package, Zap, Smartphone } from "lucide-react";
 import type { Metadata } from "next";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Products | Byungsker Log",

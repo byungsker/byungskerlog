@@ -5,11 +5,10 @@ import type { Metadata } from "next";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 import { getPost } from "@/lib/post-data";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 slug도 ISR로 처리
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 const SHORT_NOINDEX_THRESHOLD = 300;
 
@@ -28,6 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const decodedSlug = decodeURIComponent(slug);
   const postData = await prisma.post.findFirst({
     where: {
+      published: true,
       OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
     },
     include: {
@@ -100,6 +100,7 @@ export default async function ShortPostPage({ params }: { params: Promise<{ slug
 
   const baseMatch = await prisma.post.findFirst({
     where: {
+      published: true,
       OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
     },
     select: { slug: true, type: true },

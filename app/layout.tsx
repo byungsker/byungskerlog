@@ -13,6 +13,7 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
+import { siteUrl } from "@/lib/site-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,8 +24,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

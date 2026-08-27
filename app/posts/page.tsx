@@ -3,10 +3,9 @@ import { PostsPageLoader } from "@/components/pages/PostsPageLoader";
 import { PostsListSkeleton } from "@/components/skeleton/PostsListSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { Metadata } from "next";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   title: "Posts | Byungsker Log",

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 vi.mock("@/lib/prisma", () => ({
@@ -18,6 +19,7 @@ import { GET, POST } from "@/app/api/posts/route";
 import { getAuthUser } from "@/lib/auth";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
+const mockRevalidatePath = vi.mocked(revalidatePath);
 
 function createGetRequest(path: string): NextRequest {
   return new NextRequest(new URL(path, "http://localhost:3000"));
@@ -35,6 +37,7 @@ describe("GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
+    mockRevalidatePath.mockReset();
   });
 
   it("게시글 목록을 성공적으로 조회한다", async () => {
@@ -122,6 +125,8 @@ describe("POST /api/posts", () => {
     expect(response.status).toBe(201);
     expect(data.title).toBe("새 게시글");
     expect(mockPrisma.post.create).toHaveBeenCalled();
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
   });
 
   it("인증되지 않은 사용자는 401 에러를 받는다", async () => {

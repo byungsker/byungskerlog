@@ -31,6 +31,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
 
     return NextResponse.json({ message: "Post deleted successfully" }, { status: 200 });
   } catch (error) {
@@ -49,7 +51,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!post) {
       throw ApiError.notFound("Post");
     }
-
     return NextResponse.json(post);
   } catch (error) {
     return handleApiError(error, "Failed to fetch post");
@@ -125,6 +126,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
 
     return NextResponse.json(post);
   } catch (error) {

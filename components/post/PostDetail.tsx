@@ -22,8 +22,7 @@ import { calculateReadingTime } from "@/lib/reading-time";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PostCacheHydrator } from "./PostCacheHydrator";
 import type { Post, SeriesPost, RelatedPost, PrevNextPost } from "@/lib/post-data";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 const SHORT_AD_CONTENT_THRESHOLD = 300;
 

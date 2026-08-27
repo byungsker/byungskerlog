@@ -9,10 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { calculateReadingTime } from "@/lib/reading-time";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 interface SeriesDetailPageProps {
   params: Promise<{ slug: string }>;

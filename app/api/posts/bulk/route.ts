@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath("/admin/posts");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
 
     const actionMessages: Record<BulkAction, string> = {
       delete: "deleted",

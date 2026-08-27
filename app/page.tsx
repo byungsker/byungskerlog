@@ -3,10 +3,9 @@ import { PostListLoader } from "@/components/post/PostListLoader";
 import { PostListSkeleton } from "@/components/skeleton/PostListSkeleton";
 import { AdSense } from "@/components/seo/Adsense";
 import type { Metadata } from "next";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   description:

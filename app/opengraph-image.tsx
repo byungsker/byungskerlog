@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { siteUrl } from "@/lib/site-config";
 
 export const alt = "Byungsker Log - 제품 주도 개발을 지향하는 개발자의 기술 블로그";
 export const size = {
@@ -6,8 +7,6 @@ export const size = {
   height: 630,
 };
 export const contentType = "image/png";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export default async function Image() {
   const logoUrl = `${siteUrl}/logo-byungsker.png`;

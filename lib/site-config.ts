@@ -13,6 +13,8 @@ export const siteConfig = {
   },
 };
 
+export const siteUrl = siteConfig.url;
+
 // Footer용 소셜 링크 배열
 export const socialLinks = [
   {

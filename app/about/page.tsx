@@ -3,12 +3,11 @@ import { MarkdownRenderer } from "@/components/post/MarkdownRenderer";
 import { PostImageGallery } from "@/components/post/PostImageGallery";
 import { AboutPageActions } from "@/components/pages/AboutPageActions";
 import { ContributionGraph } from "@/components/analytics/ContributionGraph";
+import { siteUrl } from "@/lib/site-config";
 
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   title: "About | Byungsker Log",

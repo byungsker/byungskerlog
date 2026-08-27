@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/prisma";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 export async function GET() {
-  let posts: { slug: string; title: string; excerpt: string | null; createdAt: Date; tags: string[] }[] = [];
+  let posts: {
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    createdAt: Date;
+    tags: string[];
+    type: "LONG" | "SHORT";
+  }[] = [];
 
   try {
     const rawPosts = await prisma.post.findMany({
@@ -15,6 +21,7 @@ export async function GET() {
         title: true,
         excerpt: true,
         createdAt: true,
+        type: true,
         tags: { select: { name: true } },
       },
     });
@@ -33,8 +40,8 @@ export async function GET() {
 
       return `    <item>
       <title>${escapeXml(post.title)}</title>
-      <link>${siteUrl}/posts/${post.slug}</link>
-      <guid isPermaLink="true">${siteUrl}/posts/${post.slug}</guid>
+      <link>${siteUrl}/${post.type === "SHORT" ? "short" : "posts"}/${post.slug}</link>
+      <guid isPermaLink="true">${siteUrl}/${post.type === "SHORT" ? "short" : "posts"}/${post.slug}</guid>
       <description>${escapeXml(post.excerpt || "")}</description>
       <pubDate>${pubDate}</pubDate>
       ${categories}

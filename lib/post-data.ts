@@ -4,6 +4,7 @@ export async function getPost(slug: string) {
   const decodedSlug = decodeURIComponent(slug);
   const postData = await prisma.post.findFirst({
     where: {
+      published: true,
       OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
     },
     include: {
