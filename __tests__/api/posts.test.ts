@@ -1,25 +1,30 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
-import { revalidatePath } from "next/cache";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: mockPrisma,
-}));
+vi.mock("@/lib/prisma", async () => {
+  const { mockPrisma } = await import("../mocks/prisma");
+  return { prisma: mockPrisma };
+});
 
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
+  isAuthorizedAdmin: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { GET, POST } from "@/app/api/posts/route";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
+import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
+const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
 const mockRevalidatePath = vi.mocked(revalidatePath);
+const mockRevalidateTag = vi.mocked(revalidateTag);
 
 function createGetRequest(path: string): NextRequest {
   return new NextRequest(new URL(path, "http://localhost:3000"));
@@ -33,11 +38,15 @@ function createPostRequest(path: string, body: object): NextRequest {
   });
 }
 
-describe("GET /api/posts", () => {
+describe("게시글 목록 조회 GET /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    mockPrisma.readingSession.groupBy.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
     mockRevalidatePath.mockReset();
+    mockRevalidateTag.mockReset();
   });
 
   it("게시글 목록을 성공적으로 조회한다", async () => {
@@ -61,7 +70,6 @@ describe("GET /api/posts", () => {
 
     mockPrisma.post.count.mockResolvedValue(1);
     mockPrisma.post.findMany.mockResolvedValue(mockPosts);
-    mockPrisma.postView.findMany.mockResolvedValue([]);
     mockPrisma.readingSession.findMany.mockResolvedValue([]);
 
     const request = createGetRequest("/api/posts");
@@ -72,12 +80,134 @@ describe("GET /api/posts", () => {
     expect(data.posts).toHaveLength(1);
     expect(data.posts[0].title).toBe("테스트 포스트");
     expect(data.pagination.total).toBe(1);
+    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ slug: { notIn: ["웹앱에서-스플래시-스크린-만들기"] } }),
+      })
+    );
+  });
+
+  it("비관리자 공개 응답에는 조회수 통계를 포함하지 않는다", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        title: "테스트 포스트",
+        content: "내용",
+        excerpt: null,
+        thumbnail: null,
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        updatedAt: new Date("2024-01-01"),
+        series: null,
+        subSlug: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts?sortBy=popular"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).not.toHaveProperty("totalViews");
+    expect(data.posts[0]).not.toHaveProperty("dailyViews");
+  });
+
+  it("관리자 목록은 화면에 필요한 필드와 집계 결과만 조회한다", async () => {
+    mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        subSlug: null,
+        title: "테스트 포스트",
+        excerpt: "발췌문",
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        linkedinUrl: null,
+        threadsUrl: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.groupBy
+      .mockResolvedValueOnce([
+        {
+          postId: "1",
+          _count: { _all: 4 },
+          _avg: { maxScrollDepth: 80 },
+        },
+      ])
+      .mockResolvedValueOnce([{ postId: "1", _count: { _all: 2 } }]);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+    const data = await response.json();
+    const select = vi.mocked(mockPrisma.post.findMany).mock.calls[0][0]?.select;
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).toMatchObject({
+      totalViews: 12,
+      dailyViews: 3,
+      readingSessions: 4,
+      avgScrollDepth: 80,
+      completionRate: 50,
+    });
+    expect(select).toEqual(
+      expect.objectContaining({
+        id: true,
+        title: true,
+        linkedinUrl: true,
+        threadsUrl: true,
+      })
+    );
+    expect(select).not.toHaveProperty("content");
+    expect(select).not.toHaveProperty("thumbnail");
+    expect(select).not.toHaveProperty("series");
+    expect(mockPrisma.readingSession.findMany).not.toHaveBeenCalled();
+  });
+
+  it("관리자 공개 목록 응답에는 조회수 통계를 포함한다", async () => {
+    mockGetAuthUser.mockResolvedValue({ id: "admin-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(1);
+    mockPrisma.post.findMany.mockResolvedValue([
+      {
+        id: "1",
+        slug: "test-post",
+        title: "테스트 포스트",
+        content: "내용",
+        excerpt: null,
+        thumbnail: null,
+        tags: [],
+        type: "LONG",
+        published: true,
+        createdAt: new Date("2024-01-01"),
+        updatedAt: new Date("2024-01-01"),
+        series: null,
+        subSlug: null,
+      },
+    ]);
+    mockPrisma.$queryRaw.mockResolvedValue([{ postId: "1", totalViews: BigInt(12), dailyViews: BigInt(3) }]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.posts[0]).toMatchObject({ totalViews: 12, dailyViews: 3 });
   });
 
   it("쿼리 파라미터로 필터링할 수 있다", async () => {
     mockPrisma.post.count.mockResolvedValue(0);
     mockPrisma.post.findMany.mockResolvedValue([]);
-    mockPrisma.postView.findMany.mockResolvedValue([]);
     mockPrisma.readingSession.findMany.mockResolvedValue([]);
 
     const request = createGetRequest("/api/posts?tag=react&type=LONG&page=2&limit=10");
@@ -89,16 +219,50 @@ describe("GET /api/posts", () => {
     expect(data.pagination.page).toBe(2);
     expect(data.pagination.limit).toBe(10);
   });
+
+  it("비로그인 사용자는 비공개 게시글 목록을 요청할 수 없다", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.code).toBe("UNAUTHORIZED");
+    expect(mockPrisma.post.findMany).not.toHaveBeenCalled();
+  });
+
+  it("관리자는 비공개 게시글을 포함해 조회할 수 있다", async () => {
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post.count.mockResolvedValue(0);
+    mockPrisma.post.findMany.mockResolvedValue([]);
+    mockPrisma.readingSession.findMany.mockResolvedValue([]);
+
+    const response = await GET(createGetRequest("/api/posts?includeUnpublished=true"));
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  });
 });
 
-describe("POST /api/posts", () => {
+describe("게시글 생성 POST /api/posts", () => {
   beforeEach(() => {
     resetPrismaMocks();
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    mockPrisma.readingSession.groupBy.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
   });
 
   it("인증된 사용자가 게시글을 생성할 수 있다", async () => {
-    mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.findFirst.mockResolvedValue(null);
     mockPrisma.post.create.mockResolvedValue({
       id: "new-post-1",
@@ -127,6 +291,8 @@ describe("POST /api/posts", () => {
     expect(mockPrisma.post.create).toHaveBeenCalled();
     expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("posts", "max");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("short-posts", "max");
   });
 
   it("인증되지 않은 사용자는 401 에러를 받는다", async () => {
@@ -145,8 +311,33 @@ describe("POST /api/posts", () => {
     expect(data.code).toBe("UNAUTHORIZED");
   });
 
+  it("관리자가 아닌 인증 사용자는 403 에러를 받는다", async () => {
+    mockGetAuthUser.mockResolvedValue({
+      id: "user-1",
+      primaryEmail: "reader@example.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(false);
+
+    const response = await POST(
+      createPostRequest("/api/posts", {
+        title: "새 게시글",
+        slug: "new-post",
+        content: "내용입니다",
+      })
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.code).toBe("FORBIDDEN");
+    expect(mockPrisma.post.create).not.toHaveBeenCalled();
+  });
+
   it("필수 필드가 누락되면 400 에러를 받는다", async () => {
-    mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockGetAuthUser.mockResolvedValue({
+      id: "admin-1",
+      primaryEmail: "admin@byungskerlog.com",
+    } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
 
     const request = createPostRequest("/api/posts", {
       title: "제목만",

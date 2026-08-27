@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDistinctPostViewWindowStats } from "@/lib/analytics/post-view-stats";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -20,33 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get total views
-    const totalViews = await prisma.postView.count({
-      where: { postId: post.id },
-    });
-
-    // Get daily views
-    const dailyViews = await prisma.postView.count({
-      where: {
-        postId: post.id,
-        viewedAt: { gte: oneDayAgo },
-      },
-    });
-
-    // Get weekly views
-    const weeklyViews = await prisma.postView.count({
-      where: {
-        postId: post.id,
-        viewedAt: { gte: oneWeekAgo },
-      },
-    });
-
-    // Get monthly views
-    const monthlyViews = await prisma.postView.count({
-      where: {
-        postId: post.id,
-        viewedAt: { gte: oneMonthAgo },
-      },
+    const { totalViews, dailyViews, weeklyViews, monthlyViews } = await getDistinctPostViewWindowStats(post.id, {
+      daily: oneDayAgo,
+      weekly: oneWeekAgo,
+      monthly: oneMonthAgo,
     });
 
     return NextResponse.json({

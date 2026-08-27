@@ -9,16 +9,19 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
+  isAuthorizedAdmin: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { PATCH } from "@/app/api/posts/[id]/route";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
+const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
 const mockRevalidatePath = vi.mocked(revalidatePath);
 
 function createPatchRequest(body: object): NextRequest {
@@ -33,11 +36,13 @@ describe("PATCH /api/posts/[id]", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
     mockRevalidatePath.mockReset();
   });
 
   it("게시글 수정 후 sitemap과 RSS 캐시를 무효화한다", async () => {
     mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.update.mockResolvedValue({
       id: "post-1",
       slug: "updated-post",

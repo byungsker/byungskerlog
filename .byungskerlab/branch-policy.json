@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "allowed_actor_prefixes": [
+    "codex"
+  ],
+  "delivery_units": {
+    "governance": {
+      "profile": "package-or-local",
+      "mode": "continuous",
+      "active_versions": [
+        "1.0.0"
+      ],
+      "target_version_source": ".byungskerlab/release-lines.json",
+      "production_branch": "main",
+      "work_bases": [
+        "main"
+      ],
+      "allowed_paths": [
+        ".byungskerlab/branch-policy.json",
+        ".byungskerlab/release-lines.json",
+        ".github/CODEOWNERS",
+        ".github/pull_request_template.md",
+        ".github/scripts/validate_target_version_pr.py",
+        ".github/workflows/target-version-gate.yml",
+        "AGENTS.md",
+        "CLAUDE.md"
+      ]
+    },
+    "web": {
+      "profile": "web-continuous",
+      "mode": "continuous",
+      "active_versions": [
+        "0.2.0",
+        "0.3.0"
+      ],
+      "target_version_source": ".byungskerlab/release-lines.json",
+      "production_branch": "main",
+      "work_bases": [
+        "main"
+      ],
+      "allowed_paths": [
+        ".byungskerlab/product.yaml",
+        "__tests__/**",
+        "app/**",
+        "components/**",
+        "hooks/**",
+        "lib/**",
+        "middleware.ts",
+        "package-lock.json",
+        "package.json",
+        "prisma/**",
+        "public/**",
+        "types/**",
+        "vitest.config.ts",
+        ".github/workflows/ci.yml",
+        ".github/workflows/deploy.yml"
+      ]
+    }
+  }
+}

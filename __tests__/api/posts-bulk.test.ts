@@ -9,27 +9,32 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/auth", () => ({
   getAuthUser: vi.fn(),
+  isAuthorizedAdmin: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { POST } from "@/app/api/posts/bulk/route";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
+const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
 const mockRevalidatePath = vi.mocked(revalidatePath);
 
 describe("POST /api/posts/bulk", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockGetAuthUser.mockReset();
+    mockIsAuthorizedAdmin.mockReset();
     mockRevalidatePath.mockReset();
   });
 
   it("일괄 공개 후 sitemap과 RSS 캐시를 무효화한다", async () => {
     mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
     mockPrisma.post.updateMany.mockResolvedValue({ count: 2 });
 
     const request = new NextRequest(new URL("/api/posts/bulk", "http://localhost:3000"), {

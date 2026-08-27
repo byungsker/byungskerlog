@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { Post } from "@/lib/types/post";
+import type { AdminPostListItem } from "@/lib/types/post";
 import { queryKeys, type AdminPostsFilters } from "@/lib/queryKeys";
 import { apiClient } from "@/lib/api/client";
 
 export interface AdminPostsData {
-  posts: Post[];
+  posts: AdminPostListItem[];
 }
 
 interface UseAdminPostsOptions {

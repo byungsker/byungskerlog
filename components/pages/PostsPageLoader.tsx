@@ -1,6 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { getPostListCacheKey } from "@/lib/post-cache";
 import { PostsPageClient } from "./PostsPageClient";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 interface PostsPageLoaderProps {
   page: number;
@@ -16,7 +18,7 @@ const getPosts = (page: number) =>
       try {
         const [postsRaw, total] = await Promise.all([
           prisma.post.findMany({
-            where: { published: true, type: "LONG" },
+            where: { published: true, type: "LONG", slug: getPublicPostSlugFilter() },
             orderBy: { createdAt: "desc" },
             skip,
             take: limit,
@@ -38,7 +40,7 @@ const getPosts = (page: number) =>
               },
             },
           }),
-          prisma.post.count({ where: { published: true, type: "LONG" } }),
+          prisma.post.count({ where: { published: true, type: "LONG", slug: getPublicPostSlugFilter() } }),
         ]);
 
         const posts = postsRaw.map((p) => ({
@@ -55,19 +57,12 @@ const getPosts = (page: number) =>
             totalPages: Math.ceil(total / limit),
           },
         };
-      } catch {
-        return {
-          posts: [],
-          pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 0,
-          },
-        };
+      } catch (error) {
+        console.error("[PostsPageLoader] Failed to load posts", error);
+        throw error;
       }
     },
-    [`posts-page-${page}`],
+    [getPostListCacheKey("long", page)],
     { revalidate: 3600, tags: ["posts"] }
   )();
 
@@ -75,7 +70,11 @@ export async function PostsPageLoader({ page, countOnly }: PostsPageLoaderProps)
   const data = await getPosts(page);
 
   if (countOnly) {
-    return <span className="text-xl text-muted-foreground">{data.pagination.total}</span>;
+    return (
+      <span aria-label={`총 포스트 ${data.pagination.total}개`} className="text-xl text-muted-foreground">
+        {data.pagination.total}
+      </span>
+    );
   }
 
   return <PostsPageClient initialData={data} currentPage={page} />;

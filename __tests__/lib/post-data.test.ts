@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: mockPrisma,
-}));
+vi.mock("@/lib/prisma", async () => {
+  const { mockPrisma } = await import("../mocks/prisma");
+  return { prisma: mockPrisma };
+});
 
 import { getPost } from "@/lib/post-data";
+import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 describe("공개 게시글 조회", () => {
   beforeEach(() => {

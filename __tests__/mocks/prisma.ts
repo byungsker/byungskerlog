@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 export const mockPrisma = {
+  $queryRaw: vi.fn(),
   post: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
@@ -66,11 +67,14 @@ export const mockPrisma = {
     findMany: vi.fn(),
     findFirst: vi.fn(),
     upsert: vi.fn(),
+    groupBy: vi.fn(),
   },
 };
 
 export function resetPrismaMocks() {
+  mockPrisma.$queryRaw.mockReset();
   Object.values(mockPrisma).forEach((model) => {
+    if (typeof model === "function") return;
     Object.values(model).forEach((method) => {
       if (typeof method === "function" && "mockReset" in method) {
         (method as ReturnType<typeof vi.fn>).mockReset();

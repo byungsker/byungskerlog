@@ -10,10 +10,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Providers } from "./providers";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
-import { siteUrl } from "@/lib/site-config";
+import { siteConfig } from "@/lib/site-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,6 +23,8 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -86,7 +87,6 @@ export const metadata: Metadata = {
     title: "Byungsker Log",
     description: "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그",
     images: [`${siteUrl}/og-image.png`],
-    creator: "@byungsker",
   },
   robots: {
     index: true,
@@ -136,13 +136,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const adSenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", geistSans.variable, geistMono.variable)}>
         <StructuredData type="blog" />
-        {adSenseClientId && <ConditionalAdsenseScript clientId={adSenseClientId} />}
         {stackClientApp ? (
           <StackProvider app={stackClientApp}>
             <StackTheme>

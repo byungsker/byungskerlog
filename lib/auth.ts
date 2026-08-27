@@ -1,4 +1,11 @@
 import { stackServerApp } from "@/stack/server";
+import { isAdminEmail } from "@/lib/auth-allowlist";
+
+interface AuthorizedUser {
+  id: string;
+  primaryEmail?: string | null;
+  primaryEmailVerified: boolean;
+}
 
 export async function getAuthUser() {
   if (!stackServerApp) {
@@ -11,11 +18,27 @@ export async function getAuthUser() {
   }
 }
 
-// 관리자 ID 목록 (환경변수로 관리)
-const ADMIN_USER_IDS = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || [];
-
 export function isAdminUser(userId: string): boolean {
-  return ADMIN_USER_IDS.includes(userId);
+  const adminUserIds =
+    process.env.ADMIN_USER_IDS?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean) || [];
+  return adminUserIds.includes(userId);
+}
+
+export function isAuthorizedAdmin(user: AuthorizedUser): boolean {
+  const adminUserIds =
+    process.env.ADMIN_USER_IDS?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean) || [];
+
+  // Keep the configured immutable IDs authoritative when present. Preview
+  // deployments may omit this optional variable, so use the same verified
+  // Stack Auth email allowlist that controls the administrator UI as a
+  // compatibility fallback instead of signing an administrator out.
+  return adminUserIds.length > 0
+    ? adminUserIds.includes(user.id)
+    : user.primaryEmailVerified === true && isAdminEmail(user.primaryEmail);
 }
 
 export async function getAuthUserWithAdminCheck() {
@@ -25,6 +48,6 @@ export async function getAuthUserWithAdminCheck() {
   }
   return {
     user,
-    isAdmin: isAdminUser(user.id),
+    isAdmin: isAuthorizedAdmin(user),
   };
 }

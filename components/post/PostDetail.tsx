@@ -1,8 +1,8 @@
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { Separator } from "@/components/ui/Separator";
-import { cn } from "@/lib/utils";
 import { TableOfContents } from "./Toc";
 import { MobileToc } from "./MobileToc";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -11,6 +11,7 @@ import { ReadingTracker } from "@/components/analytics/ReadingTracker";
 import { PostActions } from "./PostActions";
 import { ReadingProgress } from "./ReadingProgress";
 import { AdSense } from "@/components/seo/Adsense";
+import { ConditionalAdsenseScript } from "@/components/seo/ConditionalAdsenseScript";
 import { Giscus } from "./Giscus";
 
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Zap } from "lucide-react";
@@ -22,16 +23,12 @@ import { calculateReadingTime } from "@/lib/reading-time";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PostCacheHydrator } from "./PostCacheHydrator";
 import type { Post, SeriesPost, RelatedPost, PrevNextPost } from "@/lib/post-data";
-import { siteUrl } from "@/lib/site-config";
+import { extractMarkdownHeadings } from "@/lib/markdown-content";
+import { siteConfig } from "@/lib/site-config";
+import { getAdsensePlacementEligibility } from "@/lib/content-policy";
+import { normalizeAdsenseClientId, normalizeAdsenseSlot } from "@/lib/adsense";
 
-const SHORT_AD_CONTENT_THRESHOLD = 300;
-
-function getPlainTextLength(content: string): number {
-  return content
-    .replace(/[#*`~>\[\]()!\-_]/g, "")
-    .replace(/\s+/g, " ")
-    .trim().length;
-}
+const siteUrl = siteConfig.url;
 
 interface PostDetailProps {
   post: Post;
@@ -60,13 +57,27 @@ export function PostDetail({
   const basePath = isFromShort ? "/short" : "/posts";
   const backLink = isFromShort ? "/short-posts" : "/posts";
   const backLabel = isFromShort ? "Short" : "Post";
-  const adsEnabled = post.type !== "SHORT" || getPlainTextLength(post.content) >= SHORT_AD_CONTENT_THRESHOLD;
+  const adEligibility = getAdsensePlacementEligibility(post.type, post.content);
+  const adSenseClientId = normalizeAdsenseClientId(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
+  const adSlots = {
+    top: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP),
+    middle: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE),
+    bottom: normalizeAdsenseSlot(process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM),
+  };
+  const hasConfiguredEligibleSlot =
+    (adEligibility.top && adSlots.top) ||
+    (adEligibility.middle && adSlots.middle) ||
+    (adEligibility.bottom && adSlots.bottom);
+  const hasMobileToc = post.type !== "SHORT" && extractMarkdownHeadings(post.content).length > 0;
 
   return (
     <div className="bg-background">
       <PostCacheHydrator post={post} />
+      {adEligibility.any && adSenseClientId && hasConfiguredEligibleSlot && (
+        <ConditionalAdsenseScript clientId={adSenseClientId} />
+      )}
       <ReadingProgress />
-      {post.type !== "SHORT" && <MobileToc content={post.content} />}
+      {hasMobileToc && <MobileToc content={post.content} />}
       <StructuredData
         type="article"
         data={{
@@ -83,12 +94,11 @@ export function PostDetail({
       <ReadingTracker slug={slug} postType={post.type} />
       <div className="post-detail-layout relative py-12">
         <div className="post-content-center flex justify-center px-4 sm:px-6 lg:px-8">
-          <div className={cn("post-main-content max-w-5xl w-full", post.type !== "SHORT" && "xl:pr-24")}>
-            {adsEnabled && (
+          <div className="post-main-content max-w-3xl w-full">
+            {adEligibility.top && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_TOP || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
+                adClient={adSenseClientId}
+                adSlot={adSlots.top || ""}
                 className="mb-8"
               />
             )}
@@ -101,7 +111,7 @@ export function PostDetail({
               {backLabel}
             </Link>
 
-            <article>
+            <article tabIndex={-1}>
               <header className="mb-8">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-tight">
                   {post.title}
@@ -111,7 +121,7 @@ export function PostDetail({
                     <div className="post-created flex items-center gap-2 flex-wrap">
                       <span>작성:</span>
                       <time dateTime={post.createdAt.toISOString()}>
-                        {format(new Date(post.createdAt), "MMMM d, yyyy 'at' HH:mm")}
+                        {format(new Date(post.createdAt), "yyyy년 M월 d일 HH:mm", { locale: ko })}
                       </time>
                       <span className="hidden sm:inline">·</span>
                       <span>{calculateReadingTime(post.content)}</span>
@@ -119,7 +129,7 @@ export function PostDetail({
                     <div className="post-updated flex items-center gap-2">
                       <span>최종 수정:</span>
                       <time dateTime={post.updatedAt.toISOString()}>
-                        {format(new Date(post.updatedAt), "MMMM d, yyyy 'at' HH:mm")}
+                        {format(new Date(post.updatedAt), "yyyy년 M월 d일 HH:mm", { locale: ko })}
                       </time>
                     </div>
                   </div>
@@ -167,15 +177,14 @@ export function PostDetail({
                   <ThumbnailImage src={post.thumbnail} alt={post.title} />
                 )}
 
-                <MarkdownRenderer content={post.content} />
+                <MarkdownRenderer content={post.content} reserveMobileTocSpace={hasMobileToc} />
               </PostImageGallery>
             </article>
 
-            {adsEnabled && (
+            {adEligibility.middle && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_MIDDLE || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
+                adClient={adSenseClientId}
+                adSlot={adSlots.middle || ""}
                 className="my-8"
               />
             )}
@@ -336,11 +345,10 @@ export function PostDetail({
 
             <Separator className="my-12" />
 
-            {adsEnabled && (
+            {adEligibility.bottom && (
               <AdSense
-                adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_BOTTOM || ""}
-                adFormat="fluid"
-                adLayoutKey="-fb+5w+4e-db+86"
+                adClient={adSenseClientId}
+                adSlot={adSlots.bottom || ""}
                 className="mt-12"
               />
             )}

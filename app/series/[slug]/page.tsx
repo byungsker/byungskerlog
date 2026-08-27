@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { calculateReadingTime } from "@/lib/reading-time";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { isPostIndexable } from "@/lib/content-policy";
 import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
@@ -24,7 +26,7 @@ async function getSeriesBySlug(slug: string) {
       where: { slug: decodedSlug },
       include: {
         posts: {
-          where: { published: true },
+          where: { published: true, slug: getPublicPostSlugFilter() },
           orderBy: { createdAt: "asc" },
           select: {
             id: true,
@@ -32,6 +34,7 @@ async function getSeriesBySlug(slug: string) {
             title: true,
             excerpt: true,
             content: true,
+            type: true,
             thumbnail: true,
             tags: true,
             createdAt: true,
@@ -53,6 +56,8 @@ export async function generateMetadata({ params }: SeriesDetailPageProps): Promi
     notFound();
   }
 
+  const indexablePostCount = series.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
+
   return {
     title: `${series.name} 시리즈 | Byungsker Log`,
     description: series.description || `${series.name} 시리즈의 포스트 목록입니다.`,
@@ -64,6 +69,7 @@ export async function generateMetadata({ params }: SeriesDetailPageProps): Promi
       description: series.description || `${series.name} 시리즈의 포스트 목록입니다.`,
       url: `${siteUrl}/series/${series.slug}`,
     },
+    robots: indexablePostCount >= 2 ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 

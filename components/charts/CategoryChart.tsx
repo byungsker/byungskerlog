@@ -6,28 +6,37 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 interface CategoryChartProps {
   data: { tag: string; count: number }[];
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 const chartConfig = {
   count: {
-    label: "포스트 수",
+    label: "공개 글 수",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
 
-export function CategoryChart({ data, isLoading }: CategoryChartProps) {
+export function CategoryChart({ data, isLoading, isError }: CategoryChartProps) {
   if (isLoading) {
     return (
-      <div className="category-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
+      <div role="status" aria-live="polite" className="category-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
         로딩 중...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="status" aria-live="polite" className="category-chart-error h-[400px] flex items-center justify-center text-muted-foreground">
+        공개 글 인벤토리 분석을 불러오지 못했습니다.
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="category-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
-        데이터가 없습니다.
+      <div role="status" aria-live="polite" className="category-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
+        선택한 작성일 기간에 태그가 있는 공개 글이 없습니다.
       </div>
     );
   }

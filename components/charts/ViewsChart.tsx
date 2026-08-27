@@ -6,11 +6,12 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 interface ViewsChartProps {
   data: { title: string; slug: string; views: number }[];
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 const chartConfig = {
   views: {
-    label: "조회수",
+    label: "고유 사용자 조회수",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
@@ -21,19 +22,27 @@ function truncateTitle(title: string, maxLen = 8): string {
   return withoutPrefix.slice(0, maxLen) + "...";
 }
 
-export function ViewsChart({ data, isLoading }: ViewsChartProps) {
+export function ViewsChart({ data, isLoading, isError }: ViewsChartProps) {
   if (isLoading) {
     return (
-      <div className="views-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
+      <div role="status" aria-live="polite" className="views-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
         로딩 중...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="status" aria-live="polite" className="views-chart-error h-[400px] flex items-center justify-center text-muted-foreground">
+        고유 사용자 조회수 분석을 불러오지 못했습니다.
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="views-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
-        데이터가 없습니다.
+      <div role="status" aria-live="polite" className="views-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
+        선택한 기간에 고유 사용자 조회수가 없습니다.
       </div>
     );
   }
@@ -70,7 +79,7 @@ export function ViewsChart({ data, isLoading }: ViewsChartProps) {
               formatter={(value, name, props) => (
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium">{props.payload?.title}</span>
-                  <span className="text-muted-foreground">{value}회 조회</span>
+                  <span className="text-muted-foreground">{value}건 고유 사용자 조회</span>
                 </div>
               )}
             />
@@ -80,7 +89,7 @@ export function ViewsChart({ data, isLoading }: ViewsChartProps) {
           <LabelList
             dataKey="views"
             position="right"
-            formatter={(value: number) => `${value}회`}
+            formatter={(value: number) => `${value}건`}
             className="fill-foreground text-[11px] font-medium"
             offset={8}
           />

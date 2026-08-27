@@ -1,49 +1,47 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
+import { getUtcDateOnly, parseAnalyticsDateRange } from "@/lib/analytics/date-range";
+import { ApiError, handleApiError } from "@/lib/api/errors";
+import { getDistinctVisitorCounts } from "@/lib/analytics/post-view-stats";
+import { API_RATE_LIMITS } from "@/lib/api/security-policy";
+import { checkUserRateLimit, rateLimitExceededResponse, setRateLimitHeaders } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
-    // Check authentication
     const user = await getAuthUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw ApiError.unauthorized();
     }
 
-    const now = new Date();
-    // Use UTC for consistent timezone handling
-    const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access is required");
+    }
 
-    // Use database aggregation for better performance
-    const uniqueToday = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(DISTINCT "ipAddress") as count
-      FROM "PostView"
-      WHERE "ipAddress" IS NOT NULL
-      AND "viewedAt" >= ${startOfToday}
-    `;
+    const rateLimit = checkUserRateLimit(user.id, "analytics:visitors", API_RATE_LIMITS.visitors.limit);
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse(rateLimit, API_RATE_LIMITS.visitors.limit);
+    }
 
-    const uniqueTotal = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(DISTINCT "ipAddress") as count
-      FROM "PostView"
-      WHERE "ipAddress" IS NOT NULL
-    `;
+    const today = getUtcDateOnly();
+    const { gte: startOfToday, lt: startOfTomorrow } = parseAnalyticsDateRange(today, today);
 
-    return NextResponse.json(
+    const [uniqueToday, uniqueTotal] = await Promise.all([
+      getDistinctVisitorCounts({ gte: startOfToday, lt: startOfTomorrow }),
+      getDistinctVisitorCounts(),
+    ]);
+
+    const response = NextResponse.json(
       {
-        today: Number(uniqueToday[0].count),
-        total: Number(uniqueTotal[0].count),
+        today: uniqueToday,
+        total: uniqueTotal,
       },
       {
-        headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-        },
+        headers: { "Cache-Control": "private, no-store" },
       }
     );
+    setRateLimitHeaders(response, rateLimit, API_RATE_LIMITS.visitors.limit);
+    return response;
   } catch (error) {
-    console.error("Error fetching visitor stats:", error);
-    if (error instanceof Error) {
-      console.error("Error details:", error.name, error.message);
-    }
-    return NextResponse.json({ error: "Failed to fetch visitor stats" }, { status: 500 });
+    return handleApiError(error, "Failed to fetch visitor stats");
   }
 }

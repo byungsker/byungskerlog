@@ -84,6 +84,9 @@ export function useUpdatePost(options: MutationOptions = {}) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.detail(updatedPost.slug),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.detailById(updatedPost.id),
+      });
 
       if (showToast) {
         toast.success("포스트가 수정되었습니다.");

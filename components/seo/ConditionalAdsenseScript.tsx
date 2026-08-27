@@ -1,35 +1,46 @@
 "use client";
 
-import Script from "next/script";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useIsAdmin } from "@/lib/client-auth";
+import { normalizeAdsenseClientId } from "@/lib/adsense";
 
-const DISALLOWED_PREFIXES = ["/books", "/admin", "/handler", "/api"];
+const ADSENSE_SCRIPT_ID = "google-adsense-script";
+let adsenseLibraryLoaded = false;
 
 interface ConditionalAdsenseScriptProps {
   clientId: string;
 }
 
 export function ConditionalAdsenseScript({ clientId }: ConditionalAdsenseScriptProps) {
-  const pathname = usePathname();
+  const isAdmin = useIsAdmin();
+  const normalizedClientId = normalizeAdsenseClientId(clientId);
 
-  if (!pathname) {
-    return null;
-  }
+  useEffect(() => {
+    const existingScript = document.getElementById(ADSENSE_SCRIPT_ID);
 
-  const isDisallowed = DISALLOWED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
+    if (isAdmin || !normalizedClientId) {
+      existingScript?.remove();
+      return;
+    }
 
-  if (isDisallowed) {
-    return null;
-  }
+    if (existingScript || adsenseLibraryLoaded) {
+      return () => existingScript?.remove();
+    }
 
-  return (
-    <Script
-      async
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`}
-      crossOrigin="anonymous"
-      strategy="afterInteractive"
-    />
-  );
+    const script = document.createElement("script");
+    script.id = ADSENSE_SCRIPT_ID;
+    script.async = true;
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${normalizedClientId}`;
+    script.crossOrigin = "anonymous";
+    script.addEventListener("load", () => {
+      adsenseLibraryLoaded = true;
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, [isAdmin, normalizedClientId]);
+
+  return null;
 }

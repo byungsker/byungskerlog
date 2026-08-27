@@ -6,35 +6,48 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 interface CountChartProps {
   data: { date: string; count: number }[];
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 const chartConfig = {
   count: {
-    label: "작성된 글",
+    label: "생성된 공개 글",
     color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig;
 
-export function CountChart({ data, isLoading }: CountChartProps) {
+export function CountChart({ data, isLoading, isError }: CountChartProps) {
   if (isLoading) {
     return (
-      <div className="count-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
+      <div role="status" aria-live="polite" className="count-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
         로딩 중...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="status" aria-live="polite" className="count-chart-error h-[400px] flex items-center justify-center text-muted-foreground">
+        공개 글 생성 추이를 불러오지 못했습니다.
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="count-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
-        데이터가 없습니다.
+      <div role="status" aria-live="polite" className="count-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
+        선택한 작성일 기간에 생성된 공개 글이 없습니다.
       </div>
     );
   }
 
   const formattedData = data.map((item) => ({
     ...item,
-    displayDate: new Date(item.date).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }),
+    displayDate: new Date(`${item.date}T00:00:00.000Z`).toLocaleDateString("ko-KR", {
+      timeZone: "UTC",
+      month: "short",
+      day: "numeric",
+    }),
   }));
 
   return (

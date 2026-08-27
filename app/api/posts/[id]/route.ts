@@ -1,14 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
 import { revalidatePath } from "next/cache";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
+import { buildPostTagsPayload } from "@/lib/server/post-tags";
+
+function getUniqueConstraintTarget(error: object): string {
+  if (!("meta" in error) || !error.meta || typeof error.meta !== "object" || !("target" in error.meta)) {
+    return "";
+  }
+
+  const target = error.meta.target;
+  return Array.isArray(target) ? target.join(" ").toLowerCase() : String(target).toLowerCase();
+}
+
+function getUniqueConstraintModel(error: object): string {
+  if (!("meta" in error) || !error.meta || typeof error.meta !== "object" || !("modelName" in error.meta)) {
+    return "";
+  }
+
+  return String(error.meta.modelName).toLowerCase();
+}
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const { id } = await params;
@@ -33,6 +55,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath(`/posts/${post.slug}`);
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
+    revalidatePostListCaches();
 
     return NextResponse.json({ message: "Post deleted successfully" }, { status: 200 });
   } catch (error) {
@@ -51,6 +74,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!post) {
       throw ApiError.notFound("Post");
     }
+    if (!post.published) {
+      const user = await getAuthUser();
+      if (!user || !isAuthorizedAdmin(user)) {
+        throw ApiError.notFound("Post");
+      }
+    }
+
     return NextResponse.json(post);
   } catch (error) {
     return handleApiError(error, "Failed to fetch post");
@@ -62,6 +92,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const { id } = await params;
@@ -83,33 +116,41 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       threadsContent,
     } = body;
 
+    const normalizedSlug = typeof slug === "string" ? slug.trim() : slug;
+    const normalizedSubSlug = typeof subSlug === "string" ? subSlug.trim() : subSlug;
+    const publicUrlCandidates = [normalizedSlug, normalizedSubSlug]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+
+    if (new Set(publicUrlCandidates).size !== publicUrlCandidates.length) {
+      throw ApiError.duplicateEntry("post URL", { field: "url" });
+    }
+
+    if (publicUrlCandidates.length > 0) {
+      const urlConflict = await prisma.post.findFirst({
+        where: {
+          id: { not: id },
+          OR: publicUrlCandidates.flatMap((candidate) => [{ slug: candidate }, { subSlug: candidate }]),
+        },
+        select: { id: true },
+      });
+
+      if (urlConflict) {
+        throw ApiError.duplicateEntry("post URL", { field: "url" });
+      }
+    }
+
+    const tagsPayload = tags !== undefined ? await buildPostTagsPayload(tags, { reset: true }) : undefined;
+
     const post = await prisma.post.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
-        ...(slug !== undefined && { slug }),
-        ...(subSlug !== undefined && { subSlug: subSlug || null }),
+        ...(slug !== undefined && { slug: normalizedSlug }),
+        ...(subSlug !== undefined && { subSlug: normalizedSubSlug || null }),
         ...(excerpt !== undefined && { excerpt }),
         ...(content !== undefined && { content }),
-        ...(tags !== undefined && {
-          tags: {
-            set: [],
-            connectOrCreate: tags.map((tagName: string) => ({
-              where: { name: tagName },
-              create: {
-                name: tagName,
-                slug:
-                  tagName
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9가-힣\s-]/g, "")
-                    .replace(/\s+/g, "-")
-                    .replace(/-+/g, "-")
-                    .replace(/^-|-$/g, "") || "tag",
-              },
-            })),
-          },
-        }),
+        ...(tagsPayload !== undefined && { tags: tagsPayload }),
         ...(type !== undefined && { type }),
         ...(published !== undefined && { published }),
         ...(thumbnail !== undefined && { thumbnail }),
@@ -128,12 +169,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     revalidatePath(`/posts/${post.slug}`);
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
+    revalidatePostListCaches();
 
     return NextResponse.json(post);
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
       if (error.code === "P2002") {
-        return ApiError.duplicateEntry("post with this slug").toResponse();
+        const target = getUniqueConstraintTarget(error);
+        const model = getUniqueConstraintModel(error);
+        const targetFields = target.split(/[^a-z0-9]+/).filter(Boolean);
+        const isPostUrlTarget = targetFields.some((field) => field === "slug" || field === "subslug");
+        if (isPostUrlTarget && model !== "tag") {
+          return ApiError.duplicateEntry("post URL", { field: "url" }).toResponse();
+        }
+        if (model === "tag" || target.includes("tag")) {
+          return ApiError.duplicateEntry("tag", { field: "tag" }).toResponse();
+        }
+        return ApiError.duplicateEntry("entry", { field: "unknown" }).toResponse();
       }
       if (error.code === "P2025") {
         return ApiError.notFound("Post").toResponse();

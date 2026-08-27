@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { getPostListCacheKey } from "@/lib/post-cache";
 import { unstable_cache } from "next/cache";
 import { ShortPostsPageClient } from "./ShortPostsPageClient";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 
 interface ShortPostsPageLoaderProps {
   page: number;
@@ -16,7 +18,7 @@ const getShortPosts = (page: number) =>
       try {
         const [postsRaw, total] = await Promise.all([
           prisma.post.findMany({
-            where: { published: true, type: "SHORT" },
+            where: { published: true, type: "SHORT", slug: getPublicPostSlugFilter() },
             orderBy: { createdAt: "desc" },
             skip,
             take: limit,
@@ -37,7 +39,7 @@ const getShortPosts = (page: number) =>
               },
             },
           }),
-          prisma.post.count({ where: { published: true, type: "SHORT" } }),
+          prisma.post.count({ where: { published: true, type: "SHORT", slug: getPublicPostSlugFilter() } }),
         ]);
 
         const posts = postsRaw.map((p) => ({
@@ -54,19 +56,12 @@ const getShortPosts = (page: number) =>
             totalPages: Math.ceil(total / limit),
           },
         };
-      } catch {
-        return {
-          posts: [],
-          pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 0,
-          },
-        };
+      } catch (error) {
+        console.error("[ShortPostsPageLoader] Failed to load short posts", error);
+        throw error;
       }
     },
-    [`short-posts-page-${page}`],
+    [getPostListCacheKey("short", page)],
     { revalidate: 3600, tags: ["posts", "short-posts"] }
   )();
 
@@ -74,7 +69,11 @@ export async function ShortPostsPageLoader({ page, countOnly }: ShortPostsPageLo
   const data = await getShortPosts(page);
 
   if (countOnly) {
-    return <span className="text-xl text-muted-foreground">{data.pagination.total}</span>;
+    return (
+      <span aria-label={`총 Shorts ${data.pagination.total}개`} className="text-xl text-muted-foreground">
+        {data.pagination.total}
+      </span>
+    );
   }
 
   return <ShortPostsPageClient initialData={data} currentPage={page} />;

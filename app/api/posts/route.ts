@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePostListCaches } from "@/lib/post-cache";
+import { getAuthUser, isAuthorizedAdmin } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/api/errors";
+import { getUtcDateOnly, parseAnalyticsDateRange } from "@/lib/analytics/date-range";
+import { getDistinctPostViewStats } from "@/lib/analytics/post-view-stats";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { buildPostTagsPayload } from "@/lib/server/post-tags";
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   let slug = baseSlug;
@@ -24,46 +29,14 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
   }
 }
 
-function generateTagSlug(tagName: string): string {
-  return (
-    tagName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || `tag-${Date.now()}`
-  );
-}
-
-async function buildTagsPayload(tags: string[]) {
-  if (!tags?.length) return undefined;
-
-  const tagOperations = await Promise.all(
-    tags.map(async (tagName: string) => {
-      // case-insensitive 검색으로 기존 태그 찾기
-      const existing = await prisma.tag.findFirst({
-        where: { name: { equals: tagName, mode: "insensitive" } },
-      });
-      if (existing) {
-        return { where: { id: existing.id }, create: { name: tagName, slug: generateTagSlug(tagName) } };
-      }
-      // 슬러그 충돌 방지: 슬러그가 이미 있으면 타임스탬프 붙이기
-      const baseSlug = generateTagSlug(tagName);
-      const slugExists = await prisma.tag.findUnique({ where: { slug: baseSlug } });
-      const finalSlug = slugExists ? `${baseSlug}-${Date.now()}` : baseSlug;
-      return { where: { name: tagName }, create: { name: tagName, slug: finalSlug } };
-    })
-  );
-
-  return { connectOrCreate: tagOperations };
-}
-
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) {
       throw ApiError.unauthorized();
+    }
+    if (!isAuthorizedAdmin(user)) {
+      throw ApiError.forbidden("Administrator access required");
     }
 
     const body = await request.json();
@@ -91,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const slug = await generateUniqueSlug(requestedSlug);
-    const tagsPayload = await buildTagsPayload(tags);
+    const tagsPayload = await buildPostTagsPayload(tags);
 
     const post = await prisma.post.create({
       data: {
@@ -148,6 +121,7 @@ export async function POST(request: NextRequest) {
     revalidatePath(`/posts/${slug}`);
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
+    revalidatePostListCaches();
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
@@ -166,17 +140,31 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const tag = searchParams.get("tag");
-    const includeUnpublished = searchParams.get("includeUnpublished") === "true";
+    const includeUnpublishedRequested = searchParams.get("includeUnpublished") === "true";
     const sortBy = searchParams.get("sortBy") || "desc";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const type = searchParams.get("type");
     const search = searchParams.get("search");
+    const user = await getAuthUser();
+    const isAdmin = Boolean(user && isAuthorizedAdmin(user));
+    let includeUnpublished = false;
+
+    if (includeUnpublishedRequested) {
+      if (!user) {
+        throw ApiError.unauthorized();
+      }
+      if (!isAdmin) {
+        throw ApiError.forbidden("Administrator access required");
+      }
+      includeUnpublished = true;
+    }
 
     const skip = (page - 1) * limit;
 
     type WhereClause = {
       published?: boolean;
+      slug?: { notIn: string[] };
       tags?: { some: { name: string } };
       type?: "LONG" | "SHORT";
       createdAt?: {
@@ -195,6 +183,7 @@ export async function GET(request: NextRequest) {
 
     if (!includeUnpublished) {
       where.published = true;
+      where.slug = getPublicPostSlugFilter();
     }
 
     if (tag) {
@@ -240,101 +229,105 @@ export async function GET(request: NextRequest) {
       where.OR = orConditions;
     }
 
-    const total = await prisma.post.count({ where });
-
-    const postsRaw = await prisma.post.findMany({
-      where,
-      orderBy: { createdAt: sortBy === "asc" ? "asc" : "desc" },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        slug: true,
-        subSlug: true,
-        title: true,
-        excerpt: true,
-        content: true,
-        thumbnail: true,
-        tags: {
-          select: { name: true },
-        },
-        type: true,
-        published: true,
-        createdAt: true,
-        updatedAt: true,
-        series: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+    const publicPostSelect = {
+      id: true,
+      slug: true,
+      subSlug: true,
+      title: true,
+      excerpt: true,
+      content: true,
+      thumbnail: true,
+      tags: {
+        select: { name: true },
+      },
+      type: true,
+      published: true,
+      createdAt: true,
+      updatedAt: true,
+      series: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
         },
       },
-    });
+    } as const;
+
+    const adminPostSelect = {
+      id: true,
+      slug: true,
+      subSlug: true,
+      title: true,
+      excerpt: true,
+      tags: {
+        select: { name: true },
+      },
+      type: true,
+      published: true,
+      createdAt: true,
+      linkedinUrl: true,
+      threadsUrl: true,
+    } as const;
+
+    const [total, postsRaw] = await Promise.all([
+      prisma.post.count({ where }),
+      prisma.post.findMany({
+        where,
+        orderBy: { createdAt: sortBy === "asc" ? "asc" : "desc" },
+        skip,
+        take: limit,
+        select: includeUnpublished ? adminPostSelect : publicPostSelect,
+      }),
+    ]);
 
     const posts = postsRaw.map((post) => ({
       ...post,
       tags: post.tags.map((t) => t.name),
     }));
 
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const today = getUtcDateOnly();
+    const { gte: startOfToday, lt: startOfTomorrow } = parseAnalyticsDateRange(today, today);
     const postIds = posts.map((post) => post.id);
 
-    const allViews =
-      postIds.length > 0
-        ? await prisma.postView.findMany({
-            where: { postId: { in: postIds } },
-            select: {
-              postId: true,
-              viewedAt: true,
-            },
-          })
-        : [];
-
-    const viewStats = allViews.reduce(
-      (acc, view) => {
-        if (!acc[view.postId]) {
-          acc[view.postId] = { totalViews: 0, dailyViews: 0 };
-        }
-        acc[view.postId].totalViews++;
-        if (view.viewedAt >= oneDayAgo) {
-          acc[view.postId].dailyViews++;
-        }
-        return acc;
-      },
-      {} as Record<string, { totalViews: number; dailyViews: number }>
+    const distinctViewStats = await getDistinctPostViewStats(postIds, {
+      gte: startOfToday,
+      lt: startOfTomorrow,
+    });
+    const viewStats = Object.fromEntries(
+      distinctViewStats.map((view) => [view.postId, { totalViews: view.totalViews, dailyViews: view.dailyViews }])
     );
 
     const longPostIds = posts.filter((p) => p.type === "LONG").map((p) => p.id);
     let readingStats: Record<string, { sessions: number; totalDepth: number; completed: number }> = {};
 
     try {
-      const readingSessions =
-        longPostIds.length > 0
-          ? await prisma.readingSession.findMany({
-              where: { postId: { in: longPostIds } },
-              select: {
-                postId: true,
-                maxScrollDepth: true,
-                completed: true,
-              },
-            })
-          : [];
+      if (longPostIds.length > 0) {
+        const [sessionStats, completedStats] = await Promise.all([
+          prisma.readingSession.groupBy({
+            by: ["postId"],
+            where: { postId: { in: longPostIds } },
+            _count: { _all: true },
+            _avg: { maxScrollDepth: true },
+          }),
+          prisma.readingSession.groupBy({
+            by: ["postId"],
+            where: { postId: { in: longPostIds }, completed: true },
+            _count: { _all: true },
+          }),
+        ]);
 
-      readingStats = readingSessions.reduce(
-        (acc, session) => {
-          if (!acc[session.postId]) {
-            acc[session.postId] = { sessions: 0, totalDepth: 0, completed: 0 };
-          }
-          acc[session.postId].sessions++;
-          acc[session.postId].totalDepth += session.maxScrollDepth;
-          if (session.completed) {
-            acc[session.postId].completed++;
-          }
-          return acc;
-        },
-        {} as Record<string, { sessions: number; totalDepth: number; completed: number }>
-      );
+        const completedByPost = new Map(completedStats.map((row) => [row.postId, row._count._all]));
+        readingStats = Object.fromEntries(
+          sessionStats.map((row) => [
+            row.postId,
+            {
+              sessions: row._count._all,
+              totalDepth: (row._avg.maxScrollDepth ?? 0) * row._count._all,
+              completed: completedByPost.get(row.postId) ?? 0,
+            },
+          ])
+        );
+      }
     } catch (readingError) {
       console.error("Error fetching reading sessions:", readingError);
     }
@@ -356,9 +349,17 @@ export async function GET(request: NextRequest) {
 
     const sortedPosts =
       sortBy === "popular" ? postsWithViews.sort((a, b) => b.totalViews - a.totalViews) : postsWithViews;
+    const responsePosts = isAdmin
+      ? sortedPosts
+      : sortedPosts.map((post) => {
+          const publicPost = { ...post };
+          Reflect.deleteProperty(publicPost, "totalViews");
+          Reflect.deleteProperty(publicPost, "dailyViews");
+          return publicPost;
+        });
 
     return NextResponse.json({
-      posts: sortedPosts,
+      posts: responsePosts,
       pagination: {
         page,
         limit,

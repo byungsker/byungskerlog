@@ -5,6 +5,7 @@ import { BookOpen, FileText, Calendar } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { format } from "date-fns";
+import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
@@ -28,7 +29,7 @@ async function getSeries() {
       orderBy: { updatedAt: "desc" },
       include: {
         posts: {
-          where: { published: true },
+          where: { published: true, slug: getPublicPostSlugFilter() },
           orderBy: { createdAt: "asc" },
           select: {
             id: true,
@@ -39,7 +40,7 @@ async function getSeries() {
         _count: {
           select: {
             posts: {
-              where: { published: true },
+              where: { published: true, slug: getPublicPostSlugFilter() },
             },
           },
         },

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "delivery_units": {
+    "governance": {
+      "active_versions": [
+        "1.0.0"
+      ],
+      "evidence_refs": [
+        ".byungskerlab/branch-policy.json",
+        "AGENTS.md"
+      ],
+      "promotion_sources": {
+        "release": {},
+        "hotfix": {}
+      }
+    },
+    "web": {
+      "active_versions": [
+        "0.2.0",
+        "0.3.0"
+      ],
+      "evidence_refs": [
+        "package.json",
+        "decision:company/byungskerlab/decisions/2026-07-26-byungskerlog-0.2.0-release.md"
+      ],
+      "promotion_sources": {
+        "release": {},
+        "hotfix": {}
+      }
+    }
+  }
+}

@@ -19,11 +19,12 @@ interface ReadingChartProps {
     completionRate: number;
   }[];
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 const chartConfig = {
   completionRate: {
-    label: "완독률",
+    label: "세션 완료율",
     color: "hsl(var(--chart-1))",
   },
   avgDepth: {
@@ -38,19 +39,27 @@ function truncateTitle(title: string, maxLen = 8): string {
   return withoutPrefix.slice(0, maxLen) + "...";
 }
 
-export function ReadingChart({ data, isLoading }: ReadingChartProps) {
+export function ReadingChart({ data, isLoading, isError }: ReadingChartProps) {
   if (isLoading) {
     return (
-      <div className="reading-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
+      <div role="status" aria-live="polite" className="reading-chart-loading h-[400px] flex items-center justify-center text-muted-foreground">
         로딩 중...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="status" aria-live="polite" className="reading-chart-error h-[400px] flex items-center justify-center text-muted-foreground">
+        세션 레코드 분석을 불러오지 못했습니다.
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="reading-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
-        데이터가 없습니다. 방문자가 글을 읽으면 완독률 데이터가 수집됩니다.
+      <div role="status" aria-live="polite" className="reading-chart-empty h-[400px] flex items-center justify-center text-muted-foreground">
+        선택한 기간에 기록된 세션 레코드가 없습니다. 사람 수나 기간별 읽기 시간은 측정하지 않습니다.
       </div>
     );
   }
@@ -89,7 +98,7 @@ export function ReadingChart({ data, isLoading }: ReadingChartProps) {
             <ChartTooltipContent
               labelFormatter={(label) => {
                 const item = chartData.find((d) => d.displayTitle === label);
-                return item ? `${item.title} (${item.sessions}명)` : label;
+                return item ? `${item.title} (${item.sessions}개 세션 레코드)` : label;
               }}
               formatter={(value) => <span>{value}%</span>}
             />

@@ -43,10 +43,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
-import type { Post, Series } from "@/lib/types/post";
+import type { AdminPostListItem, Series } from "@/lib/types/post";
 import { SlugEditModal } from "@/components/modals/SlugEditModal";
 import { BulkActionConfirmModal } from "@/components/modals/BulkActionConfirmModal";
 import { SocialMediaContentModal } from "@/components/modals/SocialMediaContentModal";
+import { PostViewersModal } from "@/components/modals/PostViewersModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Highlight } from "@/components/ui/Highlight";
 import { useAdminPosts } from "@/hooks/useAdminPosts";
@@ -56,6 +57,7 @@ import { useBulkPostAction } from "@/hooks/useBulkPostMutations";
 import { useCreateSeries, useUpdateSeries, useDeleteSeries } from "@/hooks/useSeriesMutations";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { AdminPostsFilters } from "@/lib/queryKeys";
+import { getUtcDateOnly } from "@/lib/analytics/date-range";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import { ViewsChart } from "@/components/charts/ViewsChart";
 import { CountChart } from "@/components/charts/CountChart";
@@ -110,9 +112,9 @@ export default function AdminPostsPage() {
     [router]
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [postToDelete, setPostToDelete] = useState<AdminPostListItem | null>(null);
   const [slugEditModalOpen, setSlugEditModalOpen] = useState(false);
-  const [postToEditSlug, setPostToEditSlug] = useState<Post | null>(null);
+  const [postToEditSlug, setPostToEditSlug] = useState<AdminPostListItem | null>(null);
 
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null);
   const [editingSeriesName, setEditingSeriesName] = useState("");
@@ -132,10 +134,10 @@ export default function AdminPostsPage() {
   const [periodPreset, setPeriodPreset] = useState<"7d" | "30d" | "90d" | "1y" | "all" | "custom">("30d");
   const [analyticsStartDate, setAnalyticsStartDate] = useState<string>(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split("T")[0];
+    d.setUTCDate(d.getUTCDate() - 30);
+    return getUtcDateOnly(d);
   });
-  const [analyticsEndDate, setAnalyticsEndDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [analyticsEndDate, setAnalyticsEndDate] = useState<string>(() => getUtcDateOnly());
   const [analyticsType, setAnalyticsType] = useState<"all" | "LONG" | "SHORT">("all");
 
   const categoryChartRef = useRef<ChartExportHandle>(null);
@@ -169,23 +171,23 @@ export default function AdminPostsPage() {
       let start = new Date();
       switch (preset) {
         case "7d":
-          start.setDate(now.getDate() - 7);
+          start.setUTCDate(now.getUTCDate() - 6);
           break;
         case "30d":
-          start.setDate(now.getDate() - 30);
+          start.setUTCDate(now.getUTCDate() - 29);
           break;
         case "90d":
-          start.setDate(now.getDate() - 90);
+          start.setUTCDate(now.getUTCDate() - 89);
           break;
         case "1y":
-          start.setFullYear(now.getFullYear() - 1);
+          start.setUTCFullYear(now.getUTCFullYear() - 1);
           break;
         case "all":
-          start = new Date("2020-01-01");
+          start = new Date("2020-01-01T00:00:00.000Z");
           break;
       }
-      setAnalyticsStartDate(start.toISOString().split("T")[0]);
-      setAnalyticsEndDate(now.toISOString().split("T")[0]);
+      setAnalyticsStartDate(getUtcDateOnly(start));
+      setAnalyticsEndDate(getUtcDateOnly(now));
     },
     []
   );
@@ -221,8 +223,10 @@ export default function AdminPostsPage() {
   const [snippetToDelete, setSnippetToDelete] = useState<CustomSnippet | null>(null);
 
   const [snsModalOpen, setSnsModalOpen] = useState(false);
-  const [snsModalPost, setSnsModalPost] = useState<Post | null>(null);
+  const [snsModalPost, setSnsModalPost] = useState<AdminPostListItem | null>(null);
   const [snsModalPlatform, setSnsModalPlatform] = useState<"linkedin" | "threads">("linkedin");
+  const [viewersModalOpen, setViewersModalOpen] = useState(false);
+  const [viewersModalPost, setViewersModalPost] = useState<AdminPostListItem | null>(null);
 
   const filters: AdminPostsFilters = useMemo(
     () => ({
@@ -248,10 +252,12 @@ export default function AdminPostsPage() {
     enabled: activeTab === "analytics",
   };
 
-  const { data: categoryData = [], isLoading: isLoadingCategory } = useCategoryAnalytics(analyticsOptions);
-  const { data: viewsData = [], isLoading: isLoadingViews } = useViewsAnalytics(analyticsOptions);
-  const { data: countData = [], isLoading: isLoadingCount } = useCountAnalytics(analyticsOptions);
-  const { data: readingData = [], isLoading: isLoadingReading } = useReadingAnalytics(analyticsOptions);
+  const { data: categoryData = [], isLoading: isLoadingCategory, isError: isErrorCategory } =
+    useCategoryAnalytics(analyticsOptions);
+  const { data: viewsData = [], isLoading: isLoadingViews, isError: isErrorViews } = useViewsAnalytics(analyticsOptions);
+  const { data: countData = [], isLoading: isLoadingCount, isError: isErrorCount } = useCountAnalytics(analyticsOptions);
+  const { data: readingData = [], isLoading: isLoadingReading, isError: isErrorReading } =
+    useReadingAnalytics(analyticsOptions);
 
   const { data: snippets = [], isLoading: isLoadingSnippets } = useSnippets();
   const createSnippetMutation = useCreateSnippet();
@@ -318,12 +324,12 @@ export default function AdminPostsPage() {
     });
   }, [bulkAction, selectedPostIds, bulkActionMutation]);
 
-  const handleDeleteClick = (post: Post) => {
+  const handleDeleteClick = (post: AdminPostListItem) => {
     setPostToDelete(post);
     setDeleteDialogOpen(true);
   };
 
-  const handleSlugEditClick = (post: Post) => {
+  const handleSlugEditClick = (post: AdminPostListItem) => {
     setPostToEditSlug(post);
     setSlugEditModalOpen(true);
   };
@@ -482,10 +488,15 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleOpenSnsModal = (post: Post, platform: "linkedin" | "threads") => {
+  const handleOpenSnsModal = (post: AdminPostListItem, platform: "linkedin" | "threads") => {
     setSnsModalPost(post);
     setSnsModalPlatform(platform);
     setSnsModalOpen(true);
+  };
+
+  const handleOpenViewersModal = (post: AdminPostListItem) => {
+    setViewersModalPost(post);
+    setViewersModalOpen(true);
   };
 
   return (
@@ -760,12 +771,19 @@ export default function AdminPostsPage() {
                           )}
                           <div className="post-card-meta flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                             <span>{formatDate(post.createdAt)}</span>
-                            <span className="px-2 py-0.5 bg-muted rounded whitespace-nowrap">
-                              일간 {post.dailyViews || 0} / 총 {post.totalViews || 0}
-                            </span>
+                            <button
+                              type="button"
+                              className="rounded bg-muted px-2 py-0.5 text-left whitespace-nowrap transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() => handleOpenViewersModal(post)}
+                              title="조회 기록 상세 보기"
+                              aria-label={`${post.title} 조회 기록 상세 보기`}
+                            >
+                              오늘 고유 사용자 조회 {post.dailyViews || 0} / 누적 고유 사용자 조회{" "}
+                              {post.totalViews || 0}
+                            </button>
                             {post.type === "LONG" && post.completionRate !== null && (
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded whitespace-nowrap">
-                                완독 {post.completionRate}% ({post.readingSessions}명)
+                                세션 완료율 {post.completionRate}% ({post.readingSessions}개 세션 레코드)
                               </span>
                             )}
                           </div>
@@ -1060,8 +1078,8 @@ export default function AdminPostsPage() {
               className="gap-1.5"
             >
               <Eye className="h-4 w-4" />
-              <span className="hidden sm:inline">조회수 TOP</span>
-              <span className="sm:hidden">조회수</span>
+              <span className="hidden sm:inline">고유 사용자 조회 TOP</span>
+              <span className="sm:hidden">고유 사용자 조회</span>
             </Button>
             <Button
               variant={analyticsTab === "count" ? "default" : "outline"}
@@ -1070,8 +1088,8 @@ export default function AdminPostsPage() {
               className="gap-1.5"
             >
               <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">글쓰기 추이</span>
-              <span className="sm:hidden">추이</span>
+              <span className="hidden sm:inline">공개 글 생성 추이</span>
+              <span className="sm:hidden">생성 추이</span>
             </Button>
             <Button
               variant={analyticsTab === "reading" ? "default" : "outline"}
@@ -1080,7 +1098,7 @@ export default function AdminPostsPage() {
               className="gap-1.5"
             >
               <BookOpen className="h-4 w-4" />
-              완독률
+              세션 완료율
             </Button>
           </div>
 
@@ -1089,72 +1107,76 @@ export default function AdminPostsPage() {
               <ChartExportWrapper
                 ref={categoryChartRef}
                 filename="byungskerlog-category"
-                title="태그별 포스트 수"
+                title="태그별 공개 글 수"
+                description="Post.createdAt 기준 선택한 작성일 기간의 공개 글 인벤토리"
                 onExportAll={handleExportAllCharts}
                 isExportingAll={isBatchExporting}
               >
-                <CategoryChart data={categoryData} isLoading={isLoadingCategory} />
+                <CategoryChart data={categoryData} isLoading={isLoadingCategory} isError={isErrorCategory} />
               </ChartExportWrapper>
             )}
             {analyticsTab === "views" && (
               <ChartExportWrapper
                 ref={viewsChartRef}
                 filename="byungskerlog-views"
-                title="조회수 TOP 10"
+                title="고유 사용자 조회 TOP 10"
+                description="PostView.viewedAt 기간 내 visitorId distinct 조회 수; 쿠키가 없는 기존 기록은 IP 호환 키를 사용"
                 onExportAll={handleExportAllCharts}
                 isExportingAll={isBatchExporting}
               >
-                <ViewsChart data={viewsData} isLoading={isLoadingViews} />
+                <ViewsChart data={viewsData} isLoading={isLoadingViews} isError={isErrorViews} />
               </ChartExportWrapper>
             )}
             {analyticsTab === "count" && (
               <ChartExportWrapper
                 ref={countChartRef}
                 filename="byungskerlog-count"
-                title="기간별 글쓰기 추이"
+                title="기간별 공개 글 생성 추이"
+                description="Post.createdAt 기준 선택한 작성일 기간의 공개 글 생성 수"
                 onExportAll={handleExportAllCharts}
                 isExportingAll={isBatchExporting}
               >
-                <CountChart data={countData} isLoading={isLoadingCount} />
+                <CountChart data={countData} isLoading={isLoadingCount} isError={isErrorCount} />
               </ChartExportWrapper>
             )}
             {analyticsTab === "reading" && (
               <ChartExportWrapper
                 ref={readingChartRef}
                 filename="byungskerlog-reading"
-                title="완독률 TOP 10 (Long 포스트)"
+                title="세션 완료율 TOP 10 (Long 공개 글)"
+                description="ReadingSession.createdAt 기준 세션 레코드 집계; 사람 수·기간별 읽기 시간 아님"
                 onExportAll={handleExportAllCharts}
                 isExportingAll={isBatchExporting}
               >
-                <ReadingChart data={readingData} isLoading={isLoadingReading} />
+                <ReadingChart data={readingData} isLoading={isLoadingReading} isError={isErrorReading} />
               </ChartExportWrapper>
             )}
           </div>
 
           <section className="analytics-summary">
-            <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">전체 통계</h2>
+            <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">현재 목록 페이지 요약</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               <div className="stat-card p-3 sm:p-4 border border-border rounded-lg text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-primary">{posts.filter((p) => p.published).length}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">게시된 글</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">현재 페이지 공개 글</p>
               </div>
               <div className="stat-card p-3 sm:p-4 border border-border rounded-lg text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-primary">
                   {posts.filter((p) => !p.published).length}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">비공개 글</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">현재 페이지 비공개 글</p>
               </div>
               <div className="stat-card p-3 sm:p-4 border border-border rounded-lg text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-primary">
                   {posts.reduce((sum, p) => sum + (p.totalViews || 0), 0).toLocaleString()}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">총 조회수</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">현재 페이지 누적 고유 사용자 조회</p>
               </div>
               <div className="stat-card p-3 sm:p-4 border border-border rounded-lg text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-primary">
                   {posts.reduce((sum, p) => sum + (p.dailyViews || 0), 0).toLocaleString()}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">오늘 조회수</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">현재 페이지 오늘 고유 사용자 조회</p>
               </div>
             </div>
           </section>
@@ -1399,14 +1421,35 @@ export default function AdminPostsPage() {
 
       {snsModalPost && (
         <SocialMediaContentModal
+          key={snsModalPost.id}
           open={snsModalOpen}
-          onOpenChange={setSnsModalOpen}
+          onOpenChange={(open) => {
+            setSnsModalOpen(open);
+            if (!open) {
+              setSnsModalPost(null);
+            }
+          }}
           postId={snsModalPost.id}
           platform={snsModalPlatform}
-          linkedinContent={snsModalPost.linkedinContent}
-          threadsContent={snsModalPost.threadsContent}
           linkedinUrl={snsModalPost.linkedinUrl}
           threadsUrl={snsModalPost.threadsUrl}
+        />
+      )}
+
+      {viewersModalPost && (
+        <PostViewersModal
+          key={viewersModalPost.id}
+          open={viewersModalOpen}
+          onOpenChange={(open) => {
+            setViewersModalOpen(open);
+            if (!open) {
+              setViewersModalPost(null);
+            }
+          }}
+          postId={viewersModalPost.id}
+          postTitle={viewersModalPost.title}
+          totalViews={viewersModalPost.totalViews ?? 0}
+          dailyViews={viewersModalPost.dailyViews ?? 0}
         />
       )}
     </div>
