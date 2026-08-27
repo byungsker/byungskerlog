@@ -23,6 +23,7 @@ export default async function Image({
   try {
     const post = await prisma.post.findFirst({
       where: {
+        published: true,
         OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
         type: "SHORT",
       },

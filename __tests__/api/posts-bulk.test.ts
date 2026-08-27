@@ -49,4 +49,25 @@ describe("POST /api/posts/bulk", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
   });
+
+  it.each([
+    ["unpublish", "updateMany"],
+    ["delete", "deleteMany"],
+  ] as const)("일괄 %s 후 sitemap과 RSS 캐시를 무효화한다", async (action, method) => {
+    mockGetAuthUser.mockResolvedValue({ id: "user-1" } as Awaited<ReturnType<typeof getAuthUser>>);
+    mockIsAuthorizedAdmin.mockReturnValue(true);
+    mockPrisma.post[method].mockResolvedValue({ count: 1 });
+
+    const request = new NextRequest(new URL("/api/posts/bulk", "http://localhost:3000"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, postIds: ["post-1"] }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
+  });
 });

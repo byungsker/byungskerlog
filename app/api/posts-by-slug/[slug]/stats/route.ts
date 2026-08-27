@@ -7,8 +7,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { slug } = await params;
 
     // Find post by slug
-    const post = await prisma.post.findUnique({
-      where: { slug },
+    const post = await prisma.post.findFirst({
+      where: { slug, published: true },
       select: { id: true },
     });
 
