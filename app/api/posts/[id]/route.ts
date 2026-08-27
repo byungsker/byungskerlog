@@ -23,6 +23,15 @@ function getUniqueConstraintModel(error: object): string {
   return String(error.meta.modelName).toLowerCase();
 }
 
+function revalidatePublicPostPaths(slugs: Array<string | null | undefined>): void {
+  const validSlugs = new Set(slugs.filter((slug): slug is string => Boolean(slug)));
+
+  for (const slug of validSlugs) {
+    revalidatePath(`/posts/${slug}`);
+    revalidatePath(`/short/${slug}`);
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser();
@@ -37,7 +46,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const post = await prisma.post.findUnique({
       where: { id },
-      select: { slug: true },
+      select: { slug: true, subSlug: true },
     });
 
     if (!post) {
@@ -52,7 +61,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath("/posts");
     revalidatePath("/short-posts");
     revalidatePath("/tags");
-    revalidatePath(`/posts/${post.slug}`);
+    revalidatePublicPostPaths([post.slug, post.subSlug]);
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
     revalidatePostListCaches();
@@ -115,6 +124,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       linkedinContent,
       threadsContent,
     } = body;
+    const hasPublicSlugChange = slug !== undefined || subSlug !== undefined;
+    const existingPost = hasPublicSlugChange
+      ? await prisma.post.findUnique({
+          where: { id },
+          select: { slug: true, subSlug: true },
+        })
+      : null;
 
     const normalizedSlug = typeof slug === "string" ? slug.trim() : slug;
     const normalizedSubSlug = typeof subSlug === "string" ? subSlug.trim() : subSlug;
@@ -166,7 +182,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     revalidatePath("/posts");
     revalidatePath("/short-posts");
     revalidatePath("/tags");
-    revalidatePath(`/posts/${post.slug}`);
+    revalidatePublicPostPaths([existingPost?.slug, existingPost?.subSlug, post.slug, post.subSlug]);
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
     revalidatePostListCaches();
