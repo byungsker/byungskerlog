@@ -12,6 +12,7 @@ import { Providers } from "./providers";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
+import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { siteConfig } from "@/lib/site-config";
 
 const geistSans = Geist({
@@ -139,6 +140,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", geistSans.variable, geistMono.variable)}>
+        <GoogleAnalytics />
         <StructuredData type="blog" />
         {stackClientApp ? (
           <StackProvider app={stackClientApp}>
