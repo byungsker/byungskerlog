@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침 | Byungsker Log",

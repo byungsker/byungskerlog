@@ -9,11 +9,10 @@ import { PostsListSkeleton } from "@/components/skeleton/PostsListSkeleton";
 import type { Metadata } from "next";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { isPostIndexable } from "@/lib/content-policy";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 tag도 ISR로 처리
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export async function generateStaticParams() {
   // 빌드 시 프리렌더링 스킵 → 첫 접속 시 ISR 생성 (Neon 무료 티어 OOM 방지)

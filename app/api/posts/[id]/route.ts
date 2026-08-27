@@ -53,6 +53,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
     revalidatePostListCaches();
 
     return NextResponse.json({ message: "Post deleted successfully" }, { status: 200 });
@@ -165,6 +167,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${post.slug}`);
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
     revalidatePostListCaches();
 
     return NextResponse.json(post);

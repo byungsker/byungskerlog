@@ -5,8 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { BookDetailPageClient } from "./BookDetailPageClient";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
+import { siteUrl } from "@/lib/site-config";
 
 interface BookDetailPageProps {
   params: Promise<{ slug: string }>;

@@ -8,6 +8,8 @@ export const mockPrisma = {
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
+    deleteMany: vi.fn(),
     delete: vi.fn(),
     count: vi.fn(),
   },

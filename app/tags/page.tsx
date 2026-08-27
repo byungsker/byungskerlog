@@ -3,10 +3,9 @@ import { TagsPageClient } from "@/components/pages/TagsPageClient";
 import type { Metadata } from "next";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { isPostIndexable } from "@/lib/content-policy";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   title: "Tags | Byungsker Log",

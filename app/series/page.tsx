@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { format } from "date-fns";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export const metadata: Metadata = {
   title: "Series | Byungsker Log",

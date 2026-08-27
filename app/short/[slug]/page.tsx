@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const decodedSlug = decodeURIComponent(slug);
   const postData = await prisma.post.findFirst({
     where: {
+      published: true,
       OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
     },
     include: {
@@ -94,6 +95,7 @@ export default async function ShortPostPage({ params }: { params: Promise<{ slug
 
   const baseMatch = await prisma.post.findFirst({
     where: {
+      published: true,
       OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
     },
     select: { slug: true, type: true },

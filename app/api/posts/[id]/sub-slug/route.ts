@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getAuthUser } from "@/lib/auth";
+import { revalidatePostListCaches } from "@/lib/post-cache";
 
 const SUB_SLUG_REGEX = /^[a-z0-9-]+$/;
 
@@ -51,7 +52,7 @@ export async function PATCH(
 
     const existingPost = await prisma.post.findUnique({
       where: { id },
-      select: { slug: true },
+      select: { slug: true, subSlug: true },
     });
 
     if (!existingPost) {
@@ -83,8 +84,13 @@ export async function PATCH(
 
     revalidatePath("/");
     revalidatePath("/posts");
-    revalidatePath(`/posts/${existingPost.slug}`);
-    revalidatePath(`/posts/${trimmedSubSlug}`);
+    for (const slug of new Set([existingPost.slug, existingPost.subSlug, trimmedSubSlug].filter(Boolean))) {
+      revalidatePath(`/posts/${slug}`);
+      revalidatePath(`/short/${slug}`);
+    }
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
+    revalidatePostListCaches();
 
     return NextResponse.json({
       subSlug: updatedPost.subSlug,

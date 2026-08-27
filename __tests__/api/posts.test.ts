@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/prisma", async () => {
@@ -23,6 +23,7 @@ import { mockPrisma, resetPrismaMocks } from "../mocks/prisma";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockIsAuthorizedAdmin = vi.mocked(isAuthorizedAdmin);
+const mockRevalidatePath = vi.mocked(revalidatePath);
 const mockRevalidateTag = vi.mocked(revalidateTag);
 
 function createGetRequest(path: string): NextRequest {
@@ -44,6 +45,7 @@ describe("게시글 목록 조회 GET /api/posts", () => {
     mockPrisma.readingSession.groupBy.mockResolvedValue([]);
     mockGetAuthUser.mockReset();
     mockIsAuthorizedAdmin.mockReset();
+    mockRevalidatePath.mockReset();
     mockRevalidateTag.mockReset();
   });
 
@@ -287,6 +289,8 @@ describe("게시글 생성 POST /api/posts", () => {
     expect(response.status).toBe(201);
     expect(data.title).toBe("새 게시글");
     expect(mockPrisma.post.create).toHaveBeenCalled();
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/sitemap.xml");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed.xml");
     expect(mockRevalidateTag).toHaveBeenCalledWith("posts", "max");
     expect(mockRevalidateTag).toHaveBeenCalledWith("short-posts", "max");
   });

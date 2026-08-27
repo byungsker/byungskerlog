@@ -6,11 +6,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { isPostIndexable } from "@/lib/content-policy";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
+import { siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamic = "force-dynamic";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export async function generateMetadata(): Promise<Metadata> {
   const posts = await prisma.post.findMany({

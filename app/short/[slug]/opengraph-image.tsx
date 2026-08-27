@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
+import { siteUrl } from "@/lib/site-config";
 
 export const alt = "Byungsker Log Short Post";
 export const size = {
@@ -7,8 +8,6 @@ export const size = {
   height: 630,
 };
 export const contentType = "image/png";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://byungskerlog.vercel.app";
 
 export default async function Image({
   params,
@@ -24,6 +23,7 @@ export default async function Image({
   try {
     const post = await prisma.post.findFirst({
       where: {
+        published: true,
         OR: [{ slug: decodedSlug }, { subSlug: decodedSlug }],
         type: "SHORT",
       },

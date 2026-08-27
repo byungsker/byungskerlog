@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         data: { linkedShortPostId: shortPost.id },
       });
 
-      revalidatePath(`/short-posts/${shortSlug}`);
+      revalidatePath(`/short/${shortSlug}`);
     }
 
     revalidatePath("/");
@@ -119,6 +119,8 @@ export async function POST(request: NextRequest) {
     revalidatePath("/short-posts");
     revalidatePath("/tags");
     revalidatePath(`/posts/${slug}`);
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
     revalidatePostListCaches();
 
     return NextResponse.json(post, { status: 201 });
