@@ -177,7 +177,7 @@ export function PostDetail({
                   <ThumbnailImage src={post.thumbnail} alt={post.title} />
                 )}
 
-                <MarkdownRenderer content={post.content} reserveMobileTocSpace={hasMobileToc} />
+                <MarkdownRenderer content={post.content} />
               </PostImageGallery>
             </article>
 

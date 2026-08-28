@@ -52,15 +52,12 @@ describe("MarkdownRenderer", () => {
     expect(screen.getByText("이에요.", { exact: false })).toBeInTheDocument();
   });
 
-  it("긴 링크를 임의 지점에서 줄바꿈하고 목차가 있을 때만 모바일 여백을 예약한다", () => {
+  it("긴 링크를 임의 지점에서 줄바꿈하고 모바일 목차가 있어도 본문 폭을 줄이지 않는다", () => {
     const content = "[긴 링크](https://example.com/very-long-path-without-natural-breakpoints)";
-    const { container, rerender } = render(<MarkdownRenderer content={content} />);
+    const { container } = render(<MarkdownRenderer content={content} />);
 
     expect(screen.getByRole("link", { name: "긴 링크" })).toHaveClass("[overflow-wrap:anywhere]");
-    expect(container.querySelector(".article-prose")).not.toHaveClass("pr-10");
-
-    rerender(<MarkdownRenderer content={content} reserveMobileTocSpace />);
-    expect(container.querySelector(".article-prose")).toHaveClass("pr-10");
+    expect(container.querySelector(".article-prose")?.className).not.toMatch(/\b(?:pr-10|md:pr-12|xl:pr-0)\b/);
   });
 
   it("저장 HTML에서 실행 가능한 요소와 이벤트 속성을 제거한다", () => {
