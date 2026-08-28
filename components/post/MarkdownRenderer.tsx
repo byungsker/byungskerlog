@@ -51,7 +51,6 @@ function extractText(children: ReactNode): string {
 
 interface MarkdownRendererProps {
   content: string;
-  reserveMobileTocSpace?: boolean;
 }
 
 interface CodeComponentProps {
@@ -63,24 +62,13 @@ interface CodeComponentProps {
 interface MarkdownContentProps {
   segments: { type: "markdown" | "url"; content: string }[];
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
-  reserveMobileTocSpace: boolean;
 }
 
-const MarkdownContent = memo(function MarkdownContent({
-  segments,
-  onClick,
-  reserveMobileTocSpace,
-}: MarkdownContentProps) {
+const MarkdownContent = memo(function MarkdownContent({ segments, onClick }: MarkdownContentProps) {
   const components = createMarkdownComponents();
 
   return (
-    <div
-      className={cn(
-        "article-prose prose dark:prose-invert max-w-none",
-        reserveMobileTocSpace && "pr-10 md:pr-12 xl:pr-0"
-      )}
-      onClick={onClick}
-    >
+    <div className="article-prose prose dark:prose-invert max-w-none" onClick={onClick}>
       {segments.map((segment, index) =>
         segment.type === "url" ? (
           <LinkCard key={index} url={segment.content} />
@@ -259,7 +247,7 @@ function createMarkdownComponents(): Components {
   };
 }
 
-export function MarkdownRenderer({ content, reserveMobileTocSpace = false }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { registerImages, openLightbox } = useImageLightbox();
 
   const processedContent = useMemo(() => {
@@ -288,6 +276,6 @@ export function MarkdownRenderer({ content, reserveMobileTocSpace = false }: Mar
   }, [processedContent]);
 
   return (
-    <MarkdownContent segments={segments} onClick={handleProseClick} reserveMobileTocSpace={reserveMobileTocSpace} />
+    <MarkdownContent segments={segments} onClick={handleProseClick} />
   );
 }
