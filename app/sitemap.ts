@@ -19,6 +19,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${siteUrl}/bbanggu-cloud-bridge`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.4,
+    },
+    {
       url: `${siteUrl}/about`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
