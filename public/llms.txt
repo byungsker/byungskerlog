@@ -23,17 +23,17 @@ Byungsker Log is a Korean technical blog that shares insights on:
 - Name: 병스커 (Byungsker)
 - Role: Software Developer
 - Focus: Product-Led Development
-- Website: https://byungskerlog.com
+- Website: https://blog.byungsker.com
 
 ## Main Sections
 
-- Home: https://byungskerlog.com/
-- Posts: https://byungskerlog.com/posts
-- Short Posts: https://byungskerlog.com/short-posts
-- Series: https://byungskerlog.com/series
-- Tags: https://byungskerlog.com/tags
-- Products: https://byungskerlog.com/products
-- About: https://byungskerlog.com/about
+- Home: https://blog.byungsker.com/
+- Posts: https://blog.byungsker.com/posts
+- Short Posts: https://blog.byungsker.com/short-posts
+- Series: https://blog.byungsker.com/series
+- Tags: https://blog.byungsker.com/tags
+- Products: https://blog.byungsker.com/products
+- About: https://blog.byungsker.com/about
 
 ## Content Topics
 
@@ -56,8 +56,8 @@ For inquiries or collaboration, please visit the About page or connect through t
 
 ## Sitemap
 
-https://byungskerlog.com/sitemap.xml
+https://blog.byungsker.com/sitemap.xml
 
 ## RSS Feed
 
-https://byungskerlog.com/feed.xml
+https://blog.byungsker.com/feed.xml

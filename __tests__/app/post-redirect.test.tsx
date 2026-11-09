@@ -39,7 +39,7 @@ describe("중복 LONG 포스트 URL 통합", () => {
     });
 
     expect(metadata.robots).toEqual({ index: false, follow: true });
-    expect(metadata.alternates).toEqual({ canonical: "https://byungskerlog.com/posts/web-app-splash-screen" });
+    expect(metadata.alternates).toEqual({ canonical: "https://blog.byungsker.com/posts/web-app-splash-screen" });
     expect(mockPrisma.post.findFirst).not.toHaveBeenCalled();
   });
 });

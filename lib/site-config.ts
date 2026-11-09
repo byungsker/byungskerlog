@@ -2,7 +2,7 @@
 export const siteConfig = {
   name: "Byungsker Log",
   description: "Byungsker의 개인 블로그",
-  url: "https://byungskerlog.com",
+  url: "https://blog.byungsker.com",
   author: "Byungsker",
 
   // SNS 링크
