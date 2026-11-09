@@ -8,6 +8,6 @@ describe("중복 LONG 포스트 HTTP 리다이렉트", () => {
     );
 
     expect(response.status).toBe(308);
-    expect(response.headers.get("location")).toBe("https://byungskerlog.com/posts/web-app-splash-screen");
+    expect(response.headers.get("location")).toBe("https://blog.byungsker.com/posts/web-app-splash-screen");
   });
 });

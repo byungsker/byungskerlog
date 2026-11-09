@@ -63,16 +63,16 @@ describe("sitemap 공개 콘텐츠 정책", () => {
 
     const urls = (await sitemap()).map((entry) => entry.url);
 
-    expect(urls).toContain("https://byungskerlog.com/posts/web-app-splash-screen");
-    expect(urls).toContain("https://byungskerlog.com/short/valuable-short");
-    expect(urls).toContain("https://byungskerlog.com/series/full-series");
-    expect(urls).toContain("https://byungskerlog.com/tags/full-tag");
-    expect(urls).not.toContain("https://byungskerlog.com/posts/웹앱에서-스플래시-스크린-만들기");
-    expect(urls).not.toContain("https://byungskerlog.com/posts/thin-long");
-    expect(urls).not.toContain("https://byungskerlog.com/short/thin-short");
-    expect(urls).not.toContain("https://byungskerlog.com/short-posts");
-    expect(urls).not.toContain("https://byungskerlog.com/series/thin-series");
-    expect(urls).not.toContain("https://byungskerlog.com/tags/thin-tag");
+    expect(urls).toContain("https://blog.byungsker.com/posts/web-app-splash-screen");
+    expect(urls).toContain("https://blog.byungsker.com/short/valuable-short");
+    expect(urls).toContain("https://blog.byungsker.com/series/full-series");
+    expect(urls).toContain("https://blog.byungsker.com/tags/full-tag");
+    expect(urls).not.toContain("https://blog.byungsker.com/posts/웹앱에서-스플래시-스크린-만들기");
+    expect(urls).not.toContain("https://blog.byungsker.com/posts/thin-long");
+    expect(urls).not.toContain("https://blog.byungsker.com/short/thin-short");
+    expect(urls).not.toContain("https://blog.byungsker.com/short-posts");
+    expect(urls).not.toContain("https://blog.byungsker.com/series/thin-series");
+    expect(urls).not.toContain("https://blog.byungsker.com/tags/thin-tag");
 
     expect(mockPrisma.post.findMany).toHaveBeenNthCalledWith(
       1,

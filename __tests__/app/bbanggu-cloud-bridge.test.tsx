@@ -21,10 +21,10 @@ describe("Bbanggu Cloud Bridge 공개 페이지", () => {
     expect(metadata).toMatchObject({
       title: "Bbanggu Cloud Bridge",
       alternates: {
-        canonical: "https://byungskerlog.com/bbanggu-cloud-bridge",
+        canonical: "https://blog.byungsker.com/bbanggu-cloud-bridge",
       },
       openGraph: {
-        url: "https://byungskerlog.com/bbanggu-cloud-bridge",
+        url: "https://blog.byungsker.com/bbanggu-cloud-bridge",
       },
     });
   });
@@ -47,6 +47,6 @@ describe("Bbanggu Cloud Bridge 공개 페이지", () => {
 
     const urls = (await sitemap()).map((entry) => entry.url);
 
-    expect(urls).toContain("https://byungskerlog.com/bbanggu-cloud-bridge");
+    expect(urls).toContain("https://blog.byungsker.com/bbanggu-cloud-bridge");
   });
 });

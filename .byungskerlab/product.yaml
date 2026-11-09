@@ -18,7 +18,7 @@ brand:
 
 surfaces:
   - type: web
-    identifier: https://byungskerlog.com/
+    identifier: https://blog.byungsker.com/
 
 portfolio:
   slot_status: existing-unclassified

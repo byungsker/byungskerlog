@@ -20,8 +20,8 @@ describe("공개 RSS URL 정책", () => {
     const response = await GET();
     const xml = await response.text();
 
-    expect(xml).toContain("https://byungskerlog.com/posts/long-post");
-    expect(xml).toContain("https://byungskerlog.com/short/short-post");
+    expect(xml).toContain("https://blog.byungsker.com/posts/long-post");
+    expect(xml).toContain("https://blog.byungsker.com/short/short-post");
     expect(xml).not.toContain("byungskerlog.vercel.app");
     expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
