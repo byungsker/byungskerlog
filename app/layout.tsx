@@ -103,7 +103,10 @@ export const metadata: Metadata = {
   verification: {
     google: "ZS-R9rw5s4aTZLs39lPouKDbOCDWzoPTuK7-FTJWE9A",
     other: {
-      "naver-site-verification": "b5fe47a6ed7b521763b6c03524d676baba809a52",
+      "naver-site-verification": [
+        "b5fe47a6ed7b521763b6c03524d676baba809a52",
+        "bfc7359cd59cfe03842ac8b3f3367938b6491779",
+      ],
     },
   },
   other: {
