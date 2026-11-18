@@ -15,7 +15,7 @@ const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
   description:
-    "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그. 최신 소프트웨어 개발, 제품 개발, 스타트업 관련 글을 확인하세요.",
+    "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
   alternates: {
     canonical: siteUrl,
   },

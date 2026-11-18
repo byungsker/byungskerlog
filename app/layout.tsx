@@ -30,11 +30,11 @@ const siteUrl = siteConfig.url;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Byungsker Log - 병스커의 기술 블로그",
-    template: "%s | Byungsker Log",
+    default: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
+    template: "%s | 병스커(Byungsker) 개발 블로그",
   },
   description:
-    "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그. 소프트웨어 개발, 제품 개발, 스타트업에 대한 인사이트를 공유합니다.",
+    "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
   keywords: [
     "병스커",
     "Byungsker",
@@ -52,6 +52,8 @@ export const metadata: Metadata = {
     "Product-Led Development",
     "스타트업",
     "프론트엔드",
+    "프론트엔드 개발자",
+    "FE",
     "웹개발",
     "Next.js",
     "React",
@@ -71,9 +73,9 @@ export const metadata: Metadata = {
     alternateLocale: ["en_US"],
     url: siteUrl,
     siteName: "Byungsker Log",
-    title: "Byungsker Log",
+    title: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
     description:
-      "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그. 소프트웨어 개발, 제품 개발, 스타트업에 대한 인사이트를 공유합니다.",
+      "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
     images: [
       {
         url: `${siteUrl}/og-image.png`,
@@ -85,8 +87,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Byungsker Log",
-    description: "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그",
+    title: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
+    description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript 경험을 기록합니다.",
     images: [`${siteUrl}/og-image.png`],
   },
   robots: {
