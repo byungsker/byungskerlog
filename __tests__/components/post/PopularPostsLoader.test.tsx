@@ -89,7 +89,7 @@ describe("PopularPostsLoader", () => {
       "2025-01-19",
       "2024-11-10",
     ]);
-    expect(posts[3].href).toBe("https://byungskerlog.com/posts/fluttrer-web에서-javascript-유연하게-사용하기");
+    expect(posts[3].href).toBe("https://blog.byungsker.com/posts/fluttrer-web에서-javascript-유연하게-사용하기");
     expect(posts[3]).not.toHaveProperty("viewCount");
     expect(posts[3]).not.toHaveProperty("isBaseline");
   });
