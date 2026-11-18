@@ -67,7 +67,7 @@ export function Header() {
             />
           </Link>
 
-          <nav className="desktop-nav hidden items-center gap-4 md:flex lg:gap-6">
+          <nav className="desktop-nav hidden items-center gap-4 lg:flex lg:gap-6">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -87,6 +87,12 @@ export function Header() {
                 </Link>
               );
             })}
+            <a
+              href="https://byungsker.com/"
+              className="desktop-nav-link inline-flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              Portfolio <span aria-hidden="true">↗</span>
+            </a>
             {isAuthorized && (
               <Button variant="ghost" size="sm" onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="gap-2">
                 관리자
@@ -100,7 +106,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="sm"
-            className="mobile-menu-trigger min-h-11 min-w-11 md:hidden"
+            className="mobile-menu-trigger min-h-11 min-w-11 lg:hidden"
             onClick={() => setIsOpen(true)}
             aria-label="메뉴 열기"
           >
@@ -142,6 +148,16 @@ export function Header() {
                       </Link>
                     );
                   })}
+                </div>
+
+                <div className="border-t border-border/40 pt-3">
+                  <a
+                    href="https://byungsker.com/"
+                    onClick={() => setIsOpen(false)}
+                    className="mobile-nav-link inline-flex min-h-11 min-w-11 items-center gap-2 px-4 py-2 text-lg font-medium text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    Portfolio <span aria-hidden="true">↗</span>
+                  </a>
                 </div>
 
                 {isAuthorized && (
@@ -190,7 +206,7 @@ export function Header() {
       </div>
 
       {isAuthorized && isAdminMenuOpen && (
-        <div className="admin-sub-gnb hidden md:block border-t border-border/40 bg-muted/50">
+        <div className="admin-sub-gnb hidden lg:block border-t border-border/40 bg-muted/50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto flex h-12 items-center gap-4">
               <Button asChild variant="ghost" size="sm" onClick={() => setIsAdminMenuOpen(false)}>
