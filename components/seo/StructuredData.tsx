@@ -67,8 +67,9 @@ export function StructuredData({ type, data }: StructuredDataProps) {
         "개발블로그",
       ],
       url: siteUrl,
-      description: "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그",
+      description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발과 제품 개발 경험을 기록합니다.",
       publisher: { "@id": `${siteUrl}/#organization` },
+      about: { "@id": `${siteUrl}/#author` },
       inLanguage: "ko-KR",
       potentialAction: {
         "@type": "SearchAction",
@@ -85,16 +86,29 @@ export function StructuredData({ type, data }: StructuredDataProps) {
       "@id": `${siteUrl}/#blog`,
       name: "Byungsker Log",
       url: siteUrl,
-      description: "제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그",
+      description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발과 제품 개발 경험을 기록합니다.",
       publisher: { "@id": `${siteUrl}/#organization` },
+      author: { "@id": `${siteUrl}/#author` },
       isPartOf: { "@id": `${siteUrl}/#website` },
       inLanguage: "ko-KR",
+    };
+
+    const baseAuthor = {
+      "@type": "Person",
+      "@id": `${siteUrl}/#author`,
+      name: "병스커 (Byungsker)",
+      alternateName: ["병스커", "Byungsker"],
+      jobTitle: "Frontend Developer (FE)",
+      description: "제품 디자인 경험을 바탕으로 웹과 앱을 만드는 프론트엔드 개발자입니다.",
+      url: "https://byungsker.com/",
+      sameAs: ["https://github.com/byungsker", "https://www.linkedin.com/in/byungsker/"],
+      knowsAbout: ["Frontend development", "FE", "React", "Next.js", "TypeScript", "Product development"],
     };
 
     if (type === "website" || type === "blog") {
       return {
         "@context": "https://schema.org",
-        "@graph": [baseOrganization, baseWebSite, baseBlog],
+        "@graph": [baseOrganization, baseAuthor, baseWebSite, baseBlog],
       };
     }
 
@@ -124,7 +138,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
       };
       return {
         "@context": "https://schema.org",
-        "@graph": [baseOrganization, baseWebSite, baseBlog, articleSchema],
+        "@graph": [baseOrganization, baseWebSite, baseBlog, articleSchema, baseAuthor],
       };
     }
 
@@ -158,7 +172,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
 
     return {
       "@context": "https://schema.org",
-      "@graph": [baseOrganization, baseWebSite, baseBlog],
+      "@graph": [baseOrganization, baseAuthor, baseWebSite, baseBlog],
     };
   };
 
