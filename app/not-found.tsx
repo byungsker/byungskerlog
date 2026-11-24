@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "404 - Page Not Found | Byungsker Log",
+  title: "페이지를 찾을 수 없음",
   description: "요청하신 페이지를 찾을 수 없습니다.",
   robots: {
     index: false,

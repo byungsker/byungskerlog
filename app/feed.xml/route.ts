@@ -56,15 +56,15 @@ export async function GET() {
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Byungsker Log</title>
+    <title>병스커로그 (Byungskerlog)</title>
     <link>${siteUrl}</link>
-    <description>제품 주도 개발을 지향하는 개발자, 병스커의 기술 블로그</description>
+    <description>프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그</description>
     <language>ko</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml"/>
     <image>
       <url>${siteUrl}/logo-byungsker.png</url>
-      <title>Byungsker Log</title>
+      <title>병스커로그 (Byungskerlog)</title>
       <link>${siteUrl}</link>
     </image>
 ${rssItems}

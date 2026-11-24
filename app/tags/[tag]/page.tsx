@@ -9,7 +9,7 @@ import { PostsListSkeleton } from "@/components/skeleton/PostsListSkeleton";
 import type { Metadata } from "next";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { isPostIndexable } from "@/lib/content-policy";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 export const dynamicParams = true; // 빌드에 없는 tag도 ISR로 처리
@@ -41,7 +41,8 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   }
 
   const indexablePostCount = tagData.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
-  const title = `${decodedTag} | Tags | Byungsker Log`;
+  const title = `${decodedTag} | 태그`;
+  const socialTitle = siteTitle(title);
   const description = `"${decodedTag}" 태그가 붙은 ${indexablePostCount}개의 포스트를 확인하세요. 병스커의 기술 블로그에서 관련 글을 탐색해보세요.`;
 
   const shouldIndex = indexablePostCount >= 3;
@@ -55,14 +56,14 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
     },
     robots: shouldIndex ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       url: `${siteUrl}/tags/${encodeURIComponent(decodedTag)}`,
       type: "website",
     },
     twitter: {
       card: "summary",
-      title,
+      title: socialTitle,
       description,
     },
   };

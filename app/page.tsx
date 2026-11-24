@@ -4,7 +4,7 @@ import { PopularPostsLoader } from "@/components/post/PopularPostsLoader";
 import { PostListLoader } from "@/components/post/PostListLoader";
 import { PostListSkeleton } from "@/components/skeleton/PostListSkeleton";
 import { HomeProducts } from "@/components/products/HomeProducts";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteTitle } from "@/lib/site-config";
 
 // The homepage depends on live database content. Render it at request time so
 // production builds do not require database connectivity and DB failures reach
@@ -15,11 +15,15 @@ const siteUrl = siteConfig.url;
 
 export const metadata: Metadata = {
   description:
-    "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
+    "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그입니다. Frontend Engineer (FE)와 Software Engineer로서 Next.js·React·TypeScript, 제품 개발과 스타트업 경험을 공유합니다.",
   alternates: {
     canonical: siteUrl,
   },
   openGraph: {
+    title: siteTitle("프로덕트 엔지니어 (Product Engineer) 개발 블로그"),
+    siteName: siteConfig.siteName,
+    description:
+      "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그입니다. Frontend Engineer (FE)와 Software Engineer로서 Next.js·React·TypeScript, 제품 개발과 스타트업 경험을 공유합니다.",
     url: siteUrl,
   },
 };

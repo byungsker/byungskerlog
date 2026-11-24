@@ -3,19 +3,19 @@ import { PostsPageLoader } from "@/components/pages/PostsPageLoader";
 import { PostsListSkeleton } from "@/components/skeleton/PostsListSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { Metadata } from "next";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Posts | Byungsker Log",
+  title: "글",
   description:
     "소프트웨어 개발, 제품 개발, 스타트업에 대한 모든 포스트를 확인하세요. 제품 주도 개발을 지향하는 개발자의 인사이트를 공유합니다.",
   alternates: {
     canonical: `${siteUrl}/posts`,
   },
   openGraph: {
-    title: "Posts | Byungsker Log",
+    title: siteTitle("글"),
     description: "소프트웨어 개발, 제품 개발, 스타트업에 대한 모든 포스트를 확인하세요.",
     url: `${siteUrl}/posts`,
   },

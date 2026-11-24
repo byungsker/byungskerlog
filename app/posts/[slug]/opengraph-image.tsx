@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
 import { siteUrl } from "@/lib/site-config";
 
-export const alt = "Byungsker Log Post";
+export const alt = "병스커로그 (Byungskerlog) 포스트";
 export const size = {
   width: 1200,
   height: 630,
@@ -17,7 +17,7 @@ export default async function Image({
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
 
-  let title = "Byungsker Log";
+  let title = "병스커로그";
   let thumbnail: string | null = null;
 
   try {
@@ -78,7 +78,7 @@ export default async function Image({
     >
       <img
         src={logoUrl}
-        alt="Byungsker Blog Logo"
+        alt="병스커로그 (Byungskerlog) 로고"
         width={1200}
         height={630}
         style={{

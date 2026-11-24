@@ -6,18 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { format } from "date-fns";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Series | Byungsker Log",
+  title: "연재 시리즈",
   description: "연재 시리즈 목록입니다. 관련 포스트를 시리즈별로 묶어서 순서대로 읽을 수 있습니다.",
   alternates: {
     canonical: `${siteUrl}/series`,
   },
   openGraph: {
-    title: "Series | Byungsker Log",
+    title: siteTitle("연재 시리즈"),
     description: "연재 시리즈 목록입니다. 관련 포스트를 시리즈별로 묶어서 순서대로 읽을 수 있습니다.",
     url: `${siteUrl}/series`,
   },

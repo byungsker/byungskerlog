@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Bbanggu Cloud Bridge",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     canonical: `${siteUrl}/bbanggu-cloud-bridge`,
   },
   openGraph: {
-    title: "Bbanggu Cloud Bridge",
+    title: siteTitle("Bbanggu Cloud Bridge"),
     description:
       "사용자의 요청에 따라 Google Calendar, Gmail, Google Drive를 연결하는 개인용 애플리케이션입니다.",
     url: `${siteUrl}/bbanggu-cloud-bridge`,

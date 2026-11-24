@@ -5,7 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { BookDetailPageClient } from "./BookDetailPageClient";
-import { siteUrl } from "@/lib/site-config";
+import { siteConfig, siteTitle, siteUrl } from "@/lib/site-config";
 
 interface BookDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -40,22 +40,22 @@ export async function generateMetadata({ params }: BookDetailPageProps): Promise
   const canonicalUrl = `${siteUrl}/books/${book.slug}`;
 
   return {
-    title: `${book.title} | Byungskerlog`,
+    title: book.title,
     description: book.summary || `${book.author}의 ${book.title}`,
     robots: { index: false, follow: true },
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${book.title} | Byungskerlog`,
+      title: siteTitle(book.title),
       description: book.summary || `${book.author}의 ${book.title}`,
       url: canonicalUrl,
       type: "article",
-      siteName: "Byungsker Log",
+      siteName: siteConfig.siteName,
     },
     twitter: {
       card: "summary",
-      title: `${book.title} | Byungskerlog`,
+      title: siteTitle(book.title),
       description: book.summary || `${book.author}의 ${book.title}`,
     },
   };
