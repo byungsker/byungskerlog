@@ -69,7 +69,7 @@ export function Header() {
               alt="병스커 BLOG"
               width={180}
               height={84}
-              className="logo-image h-8 w-auto select-none rounded"
+              className="logo-image h-7 w-auto select-none rounded"
               priority
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
