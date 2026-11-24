@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { companyProducts, getProductBySlug } from "@/lib/product-data";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteTitle } from "@/lib/site-config";
 
 const siteUrl = siteConfig.url;
 
@@ -37,10 +37,11 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
       canonical,
     },
     openGraph: {
-      title: `${product.name} (${product.localizedName}) | Byungsker Log`,
+      title: siteTitle(`${product.name} (${product.localizedName})`),
       description: product.description,
       url: canonical,
       type: "website",
+      siteName: siteConfig.siteName,
       images: [
         {
           url: `${siteUrl}${product.ogImage.src}`,

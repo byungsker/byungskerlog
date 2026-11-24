@@ -1,6 +1,8 @@
 import { siteConfig } from "@/lib/site-config";
 
 const siteUrl = siteConfig.url;
+const siteDescription =
+  "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그. Frontend Engineer (FE), Software Engineer로서 제품 개발 경험과 기술 인사이트를 공유합니다.";
 
 interface FAQItem {
   question: string;
@@ -32,17 +34,8 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     const baseOrganization = {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
-      name: "Byungsker Log",
-      alternateName: [
-        "byungskerlog",
-        "병스커로그",
-        "병스커 블로그",
-        "병스커",
-        "병로그",
-        "Byungsker",
-        "기술블로그",
-        "개발블로그",
-      ],
+      name: siteConfig.siteName,
+      alternateName: ["병스커로그", "Byungsker Log"],
       url: siteUrl,
       logo: {
         "@type": "ImageObject",
@@ -55,21 +48,11 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     const baseWebSite = {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
-      name: "Byungsker Log",
-      alternateName: [
-        "byungskerlog",
-        "병스커로그",
-        "병스커 블로그",
-        "병스커",
-        "병로그",
-        "Byungsker",
-        "기술블로그",
-        "개발블로그",
-      ],
+      name: siteConfig.siteName,
+      alternateName: ["병스커로그", "Byungsker Log"],
       url: siteUrl,
-      description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발과 제품 개발 경험을 기록합니다.",
+      description: siteDescription,
       publisher: { "@id": `${siteUrl}/#organization` },
-      about: { "@id": `${siteUrl}/#author` },
       inLanguage: "ko-KR",
       potentialAction: {
         "@type": "SearchAction",
@@ -84,11 +67,10 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     const baseBlog = {
       "@type": "Blog",
       "@id": `${siteUrl}/#blog`,
-      name: "Byungsker Log",
+      name: siteConfig.name,
       url: siteUrl,
-      description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발과 제품 개발 경험을 기록합니다.",
+      description: siteDescription,
       publisher: { "@id": `${siteUrl}/#organization` },
-      author: { "@id": `${siteUrl}/#author` },
       isPartOf: { "@id": `${siteUrl}/#website` },
       inLanguage: "ko-KR",
     };
@@ -96,19 +78,27 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     const baseAuthor = {
       "@type": "Person",
       "@id": `${siteUrl}/#author`,
-      name: "병스커 (Byungsker)",
-      alternateName: ["병스커", "Byungsker"],
-      jobTitle: "Frontend Developer (FE)",
-      description: "제품 디자인 경험을 바탕으로 웹과 앱을 만드는 프론트엔드 개발자입니다.",
+      name: "병스커",
+      alternateName: "Byungsker",
       url: "https://byungsker.com/",
-      sameAs: ["https://github.com/byungsker", "https://www.linkedin.com/in/byungsker/"],
-      knowsAbout: ["Frontend development", "FE", "React", "Next.js", "TypeScript", "Product development"],
+      jobTitle: ["Product Engineer", "Frontend Engineer (FE)", "Software Engineer"],
+      description: siteDescription,
+      knowsAbout: [
+        "Product engineering",
+        "Frontend (FE)",
+        "Frontend engineering",
+        "Software engineering",
+        "Next.js",
+        "React",
+        "TypeScript",
+      ],
+      sameAs: ["https://github.com/byungsker", "https://linkedin.com/in/byungsker"],
     };
 
     if (type === "website" || type === "blog") {
       return {
         "@context": "https://schema.org",
-        "@graph": [baseOrganization, baseAuthor, baseWebSite, baseBlog],
+        "@graph": [baseOrganization, baseWebSite, baseBlog, baseAuthor],
       };
     }
 
@@ -125,7 +115,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           "@type": "Person",
           "@id": `${siteUrl}/#author`,
           name: "병스커 (Byungsker)",
-          url: siteUrl,
+          url: "https://byungsker.com/",
         },
         publisher: { "@id": `${siteUrl}/#organization` },
         isPartOf: { "@id": `${siteUrl}/#blog` },
@@ -138,7 +128,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
       };
       return {
         "@context": "https://schema.org",
-        "@graph": [baseOrganization, baseWebSite, baseBlog, articleSchema, baseAuthor],
+        "@graph": [baseOrganization, baseWebSite, baseBlog, baseAuthor, articleSchema],
       };
     }
 
@@ -172,17 +162,12 @@ export function StructuredData({ type, data }: StructuredDataProps) {
 
     return {
       "@context": "https://schema.org",
-      "@graph": [baseOrganization, baseAuthor, baseWebSite, baseBlog],
+      "@graph": [baseOrganization, baseWebSite, baseBlog, baseAuthor],
     };
   };
 
   const structuredData = getStructuredData();
   const serializedStructuredData = JSON.stringify(structuredData).replace(/</g, "\\u003c");
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: serializedStructuredData }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializedStructuredData }} />;
 }

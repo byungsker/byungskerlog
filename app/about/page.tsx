@@ -3,7 +3,7 @@ import { MarkdownRenderer } from "@/components/post/MarkdownRenderer";
 import { PostImageGallery } from "@/components/post/PostImageGallery";
 import { AboutPageActions } from "@/components/pages/AboutPageActions";
 import { ContributionGraph } from "@/components/analytics/ContributionGraph";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 import type { Metadata } from "next";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
@@ -11,14 +11,14 @@ import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "About | Byungsker Log",
+  title: "소개",
   description:
     "제품 주도 개발을 지향하는 개발자, 병스커(Byungsker)에 대해 알아보세요. 소프트웨어 개발, 제품 개발, 스타트업에 대한 경험과 인사이트를 공유합니다.",
   alternates: {
     canonical: `${siteUrl}/about`,
   },
   openGraph: {
-    title: "About | Byungsker Log",
+    title: siteTitle("소개"),
     description: "제품 주도 개발을 지향하는 개발자, 병스커(Byungsker)에 대해 알아보세요.",
     url: `${siteUrl}/about`,
     type: "profile",
@@ -75,10 +75,10 @@ const personSchema = {
   "@context": "https://schema.org",
   "@type": "Person",
   name: "병스커 (Byungsker)",
-  url: siteUrl,
-  jobTitle: "Software Developer",
-  description: "제품 주도 개발을 지향하는 소프트웨어 개발자",
-  knowsAbout: ["소프트웨어 개발", "제품 개발", "스타트업", "Next.js", "React", "TypeScript"],
+  url: "https://byungsker.com/",
+  jobTitle: ["Product Engineer", "Frontend Engineer (FE)", "Software Engineer"],
+  description: "프로덕트 엔지니어 (Product Engineer)로서 제품을 기획하고 구현합니다.",
+  knowsAbout: ["Product engineering", "Frontend (FE)", "Frontend engineering", "Software engineering", "Next.js", "React", "TypeScript"],
   sameAs: ["https://github.com/byungsker", "https://linkedin.com/in/byungsker"],
 };
 

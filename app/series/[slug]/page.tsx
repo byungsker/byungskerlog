@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { calculateReadingTime } from "@/lib/reading-time";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { isPostIndexable } from "@/lib/content-policy";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 
@@ -59,13 +59,13 @@ export async function generateMetadata({ params }: SeriesDetailPageProps): Promi
   const indexablePostCount = series.posts.filter((post) => isPostIndexable(post.type, post.content)).length;
 
   return {
-    title: `${series.name} 시리즈 | Byungsker Log`,
+    title: `${series.name} 시리즈`,
     description: series.description || `${series.name} 시리즈의 포스트 목록입니다.`,
     alternates: {
       canonical: `${siteUrl}/series/${series.slug}`,
     },
     openGraph: {
-      title: `${series.name} 시리즈 | Byungsker Log`,
+      title: siteTitle(`${series.name} 시리즈`),
       description: series.description || `${series.name} 시리즈의 포스트 목록입니다.`,
       url: `${siteUrl}/series/${series.slug}`,
     },

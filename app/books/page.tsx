@@ -5,7 +5,7 @@ import { BooksPageClient } from "./BooksPageClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "읽은 책 | Byungskerlog",
+  title: "읽은 책",
   description: "내가 읽은 책들과 관련 글 모음",
 };
 

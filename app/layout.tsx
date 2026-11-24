@@ -13,7 +13,7 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { Toaster } from "@/components/ui/Sonner";
 import { ImageProtection } from "@/components/common/ImageProtection";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteTitle } from "@/lib/site-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,16 +30,22 @@ const siteUrl = siteConfig.url;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
-    template: "%s | 병스커(Byungsker) 개발 블로그",
+    default: siteTitle("프로덕트 엔지니어 (Product Engineer) 개발 블로그"),
+    template: `${siteConfig.titlePrefix} | %s`,
   },
   description:
-    "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
+    "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그입니다. Frontend Engineer (FE)와 Software Engineer로서 Next.js·React·TypeScript, 제품 개발과 스타트업 경험을 공유합니다.",
   keywords: [
     "병스커",
     "Byungsker",
     "병스커로그",
     "byungskerlog",
+    "프로덕트 엔지니어",
+    "Product Engineer",
+    "Frontend",
+    "Frontend (FE)",
+    "Frontend Engineer",
+    "Software Engineer",
     "병스커 블로그",
     "byungsker 블로그",
     "병로그",
@@ -52,8 +58,6 @@ export const metadata: Metadata = {
     "Product-Led Development",
     "스타트업",
     "프론트엔드",
-    "프론트엔드 개발자",
-    "FE",
     "웹개발",
     "Next.js",
     "React",
@@ -72,23 +76,24 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     alternateLocale: ["en_US"],
     url: siteUrl,
-    siteName: "Byungsker Log",
-    title: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
+    siteName: siteConfig.siteName,
+    title: siteTitle("프로덕트 엔지니어 (Product Engineer) 개발 블로그"),
     description:
-      "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript, 제품 개발과 오픈소스 경험을 기록합니다.",
+      "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그입니다. Frontend Engineer (FE)와 Software Engineer로서 Next.js·React·TypeScript, 제품 개발과 스타트업 경험을 공유합니다.",
     images: [
       {
         url: `${siteUrl}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "Byungsker Log",
+        alt: "병스커로그 (Byungskerlog) 개발 블로그",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "병스커(Byungsker) 개발 블로그 | 프론트엔드(FE)",
-    description: "개발자 병스커(Byungsker)의 기술 블로그. 프론트엔드(FE) 개발, React·Next.js·TypeScript 경험을 기록합니다.",
+    title: siteTitle("프로덕트 엔지니어 (Product Engineer) 개발 블로그"),
+    description:
+      "프로덕트 엔지니어 (Product Engineer) 병스커의 개발 블로그. Frontend Engineer (FE), Software Engineer의 제품 개발 경험을 공유합니다.",
     images: [`${siteUrl}/og-image.png`],
   },
   robots: {
@@ -105,10 +110,7 @@ export const metadata: Metadata = {
   verification: {
     google: "ZS-R9rw5s4aTZLs39lPouKDbOCDWzoPTuK7-FTJWE9A",
     other: {
-      "naver-site-verification": [
-        "b5fe47a6ed7b521763b6c03524d676baba809a52",
-        "bfc7359cd59cfe03842ac8b3f3367938b6491779",
-      ],
+      "naver-site-verification": "b5fe47a6ed7b521763b6c03524d676baba809a52",
     },
   },
   other: {
@@ -120,20 +122,22 @@ export const metadata: Metadata = {
     "article:author": "병스커 (Byungsker)",
     "article:section": "Technology",
   },
-  applicationName: "Byungsker Log",
+  applicationName: siteConfig.siteName,
   appleWebApp: {
-    title: "Byungsker Log",
+    title: "병스커로그",
   },
   alternates: {
     canonical: siteUrl,
   },
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],
-    apple: [{ url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

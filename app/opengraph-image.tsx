@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { siteUrl } from "@/lib/site-config";
 
-export const alt = "Byungsker Log - 제품 주도 개발을 지향하는 개발자의 기술 블로그";
+export const alt = "병스커로그 (Byungskerlog) - 프로덕트 엔지니어 개발 블로그";
 export const size = {
   width: 1200,
   height: 630,
@@ -25,7 +25,7 @@ export default async function Image() {
     >
       <img
         src={logoUrl}
-        alt="Byungsker Blog Logo"
+        alt="병스커로그 (Byungskerlog) 로고"
         width={400}
         height={186}
         style={{

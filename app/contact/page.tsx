@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "문의하기 | Byungsker Log",
+  title: "문의하기",
   description:
-    "Byungsker Log 운영자에게 문의하세요. 블로그 콘텐츠, 협업 제안, 기술 질문 등 무엇이든 편하게 연락해 주세요.",
+    "병스커로그 운영자에게 문의하세요. 블로그 콘텐츠, 협업 제안, 기술 질문 등 무엇이든 편하게 연락해 주세요.",
   alternates: {
     canonical: `${siteUrl}/contact`,
   },
   openGraph: {
-    title: "문의하기 | Byungsker Log",
-    description: "Byungsker Log 운영자에게 문의하세요.",
+    title: siteTitle("문의하기"),
+    description: "병스커로그 운영자에게 문의하세요.",
     url: `${siteUrl}/contact`,
   },
 };

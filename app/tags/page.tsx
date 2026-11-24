@@ -3,19 +3,19 @@ import { TagsPageClient } from "@/components/pages/TagsPageClient";
 import type { Metadata } from "next";
 import { getPublicPostSlugFilter } from "@/lib/public-post-policy";
 import { isPostIndexable } from "@/lib/content-policy";
-import { siteUrl } from "@/lib/site-config";
+import { siteTitle, siteUrl } from "@/lib/site-config";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Tags | Byungsker Log",
+  title: "태그",
   description:
     "주제별로 정리된 포스트를 태그로 찾아보세요. 소프트웨어 개발, 제품 개발, 스타트업 등 다양한 주제의 글을 탐색할 수 있습니다.",
   alternates: {
     canonical: `${siteUrl}/tags`,
   },
   openGraph: {
-    title: "Tags | Byungsker Log",
+    title: siteTitle("태그"),
     description: "주제별로 정리된 포스트를 태그로 찾아보세요.",
     url: `${siteUrl}/tags`,
   },

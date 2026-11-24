@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { PostDetailLoader } from "@/components/post/PostDetailLoader";
 import { PostDetailSkeleton } from "@/components/skeleton/PostDetailSkeleton";
 import { getPost } from "@/lib/post-data";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteTitle } from "@/lib/site-config";
 import { isPostIndexable } from "@/lib/content-policy";
 
 export const revalidate = 3600;
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = post.excerpt || post.content.replace(/[#*`\n]/g, "").substring(0, 200) + "...";
 
   return {
-    title: `${post.title} written by Byungsker`,
+    title: post.title,
     description,
     keywords: post.tags,
     authors: [{ name: "병스커 (Byungsker)" }],
@@ -60,8 +60,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       locale: "ko_KR",
       alternateLocale: ["en_US"],
       url: canonicalUrl,
-      siteName: "Byungsker Log",
-      title: `${post.title} written by Byungsker`,
+      siteName: siteConfig.siteName,
+      title: siteTitle(post.title),
       description,
       publishedTime: post.createdAt.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
     twitter: {
       card: "summary_large_image",
-      title: `${post.title} written by Byungsker`,
+      title: siteTitle(post.title),
       description,
       images: [ogImageUrl],
     },

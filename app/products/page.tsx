@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ProductCard } from "@/components/common/ProductCard";
 import { Card, CardDescription, CardHeader } from "@/components/ui/Card";
 import { companyProducts, legacyProjects } from "@/lib/product-data";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteTitle } from "@/lib/site-config";
 
 const siteUrl = siteConfig.url;
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     canonical: `${siteUrl}/products`,
   },
   openGraph: {
-    title: "만든 제품 | Byungsker Log",
+    title: siteTitle("만든 제품"),
     description: "제가 반복해서 겪은 문제를 직접 해결하기 위해 만들고, 먼저 계속 사용하며 다듬는 제품을 소개합니다.",
     url: `${siteUrl}/products`,
     type: "website",
